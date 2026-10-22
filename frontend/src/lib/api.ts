@@ -2,7 +2,7 @@ import type { Quest, RoadmapPhase } from "@/lib/quest-data";
 
 const DEFAULT_API_BASE_URL =
   process.env.NODE_ENV === "production"
-    ? "https://questo-personal-gsoc-tracker.onrender.com"
+    ? "https://questo-personal-gsoc-tracker-1.onrender.com"
     : "http://127.0.0.1:8000";
 const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 const configuredApiUrlIsLocal =
