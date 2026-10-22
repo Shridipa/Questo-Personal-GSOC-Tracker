@@ -121,8 +121,10 @@ export function HomeDashboard() {
   const currentQuest = quests.find((quest) => quest.status === "current");
   const nextQuest =
     currentQuest ??
-    quests.find((quest) => quest.status === "available" || quest.status === "current");
+    quests.find((quest) => quest.status === "available") ??
+    quests.find((quest) => quest.status !== "completed");
   const completedCount = quests.filter((quest) => quest.status === "completed").length;
+  const allQuestsCompleted = quests.length > 0 && completedCount === quests.length;
   const activePhaseIndex = nextQuest
     ? phases.findIndex((phase) => phase.title === nextQuest.phase)
     : -1;
@@ -159,78 +161,116 @@ export function HomeDashboard() {
             </div>
           </div>
 
-          <article className="daily-quest-card">
+          <article className="daily-quest-card next-quest-card">
             <div className="daily-card-top">
               <span className="daily-label">
-                <span className="live-dot" /> YOUR NEXT ACTION
+                <span className="live-dot" />{" "}
+                {allQuestsCompleted
+                  ? "ALL QUESTS COMPLETE"
+                  : currentQuest
+                    ? "IN PROGRESS"
+                    : "YOUR NEXT QUEST"}
               </span>
-              {nextQuest && <span className="date-chip">{nextQuest.date}</span>}
+              {nextQuest && <span className="date-chip">{nextQuest.phase}</span>}
+              {allQuestsCompleted && <span className="date-chip gold-chip">🎉 All Done</span>}
             </div>
-            <div className="daily-card-content">
-              <div className="daily-illustration" aria-hidden="true">
-                <div className="book-orbit">
-                  <BookOpen size={31} strokeWidth={1.9} />
+
+            {allQuestsCompleted ? (
+              <div className="daily-card-content completed-all-content">
+                <div className="daily-illustration completed-illustration" aria-hidden="true">
+                  <Trophy size={32} className="trophy-gold" />
                 </div>
-                <span className="orbit-star star-one">✦</span>
-                <span className="orbit-star star-two">✦</span>
-                <span className="orbit-dot" />
+                <div className="daily-copy">
+                  <span className="quest-category celebration">MILESTONE ACHIEVED</span>
+                  <h2>You&apos;ve completed every quest!</h2>
+                  <p>
+                    Outstanding work! You have finished all {quests.length} quests across all{" "}
+                    {phases.length} phases. Keep your knowledge sharp or record this week&apos;s
+                    reflection.
+                  </p>
+                  <div className="completed-card-actions">
+                    <Link className="button button-primary" href="/weekly-review">
+                      Open weekly review <ArrowRight size={15} />
+                    </Link>
+                    <Link className="button button-secondary" href="/roadmap">
+                      View full roadmap <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <div className="daily-copy">
-                <span className="quest-category learn">
-                  {nextQuest ? `${nextQuest.category} · ${nextQuest.phase}` : "NO CURRENT QUEST"}
-                </span>
-                <h2>{nextQuest?.title ?? "No available quest is configured"}</h2>
-                <p>
-                  {nextQuest?.description ??
-                    "All listed quests are complete or locked. Check the quest board for the next available task."}
-                </p>
-                <div className="daily-meta">
-                  {nextQuest && (
-                    <span>
-                      <Clock3 size={16} /> {nextQuest.minutes} min
+            ) : (
+              <div className="daily-card-content">
+                <div className="daily-illustration" aria-hidden="true">
+                  <div className="book-orbit">
+                    <BookOpen size={28} strokeWidth={2} />
+                  </div>
+                  <span className="orbit-star star-one">✦</span>
+                  <span className="orbit-star star-two">✦</span>
+                  <span className="orbit-dot" />
+                </div>
+                <div className="daily-copy">
+                  <div className="quest-header-tags">
+                    <span className="quest-category learn">
+                      {nextQuest ? `${nextQuest.category} · ${nextQuest.phase}` : "NO CURRENT QUEST"}
                     </span>
-                  )}
+                    {nextQuest && (
+                      <span className="quest-xp-badge">+{nextQuest.xp} XP</span>
+                    )}
+                  </div>
+                  <h2>{nextQuest?.title ?? "No available quest is configured"}</h2>
+                  <p>
+                    {nextQuest?.description ??
+                      "All listed quests are complete or locked. Check the quest board for the next available task."}
+                  </p>
+                  <div className="daily-meta">
+                    {nextQuest && (
+                      <span className="meta-time">
+                        <Clock3 size={15} /> {nextQuest.minutes} min
+                      </span>
+                    )}
+                    {nextQuest && nextQuest.date && (
+                      <span className="meta-date">Target: {nextQuest.date}</span>
+                    )}
+                  </div>
+                  {nextQuest && (() => {
+                    const resources = getQuestResources(nextQuest.id);
+                    const topResource = resources[0];
+                    if (!topResource) return null;
+                    return (
+                      <div className="next-quest-resource-block">
+                        <span className="resource-lead">Recommended resource:</span>
+                        <a
+                          href={topResource.url}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          className="next-quest-resource-link"
+                        >
+                          <BookOpen size={13} aria-hidden="true" />
+                          <span>{topResource.title}</span>
+                          <ArrowRight size={13} aria-hidden="true" />
+                        </a>
+                      </div>
+                    );
+                  })()}
+                  <button
+                    className="button button-primary start-quest action-next-quest"
+                    disabled={!nextQuest}
+                    onClick={() => nextQuest && openQuest(nextQuest)}
+                    type="button"
+                  >
+                    {nextQuest?.status === "current" ? "Continue quest" : "Start quest"}{" "}
+                    <ArrowRight size={17} />
+                  </button>
                 </div>
-                {nextQuest && (
-                  <>
-                    <p className="next-action-reason">
-                      {currentQuest
-                        ? "Recommended because the API marks this as your current quest."
-                        : "Recommended as the first available quest in roadmap order."}
-                    </p>
-                    <ul
-                      className="dashboard-resource-links"
-                      aria-label="Resources for your next quest"
-                    >
-                      {getQuestResources(nextQuest.id)
-                        .slice(0, 2)
-                        .map((resource) => (
-                          <li key={resource.url}>
-                            <a href={resource.url} rel="noopener noreferrer" target="_blank">
-                              {resource.title} <ArrowRight size={13} />
-                            </a>
-                          </li>
-                        ))}
-                    </ul>
-                  </>
-                )}
-                <button
-                  className="button button-primary start-quest"
-                  disabled={!nextQuest}
-                  onClick={() => nextQuest && openQuest(nextQuest)}
-                  type="button"
-                >
-                  {nextQuest?.status === "current" ? "Resume this quest" : "Start this quest"}{" "}
-                  <ArrowRight size={17} />
-                </button>
               </div>
-            </div>
+            )}
+
             <div className="daily-card-footer">
               <span>
-                <Sparkles size={15} /> One focused step is a win.
+                <Sparkles size={14} /> One focused step is a win.
               </span>
               <span>
-                {completedCount} of {quests.length} quests marked complete
+                {completedCount} of {quests.length} quests complete
               </span>
             </div>
           </article>
@@ -316,33 +356,37 @@ export function HomeDashboard() {
         </section>
 
         <aside aria-label="Roadmap information" className="home-rail">
-          <section className="rail-card">
+          <section className="rail-card stats-rail-card">
             <div className="rail-title">
               <span className="rail-icon goal-icon">
                 <Trophy size={18} />
               </span>
               <div>
                 <h3>Path at a glance</h3>
-                <p>Loaded from your local roadmap</p>
+                <p>Loaded from your roadmap</p>
               </div>
             </div>
-            <div className="data-summary">
-              <strong>{quests.length}</strong>
-              <span>quests</span>
-              <strong>{phases.length}</strong>
-              <span>phases</span>
-              {progressState.data && (
-                <>
-                  <strong>{progressState.data.total_xp}</strong>
-                  <span>saved XP</span>
-                  <strong>{progressState.data.completed_quests}</strong>
-                  <span>completed quests</span>
-                </>
-              )}
+            <div className="stats-grid data-summary">
+              <div className="stat-item">
+                <strong className="stat-value">{quests.length}</strong>
+                <span className="stat-label">quests</span>
+              </div>
+              <div className="stat-item">
+                <strong className="stat-value">{phases.length}</strong>
+                <span className="stat-label">phases</span>
+              </div>
+              <div className="stat-item">
+                <strong className="stat-value">{progressState.data ? progressState.data.total_xp : 0}</strong>
+                <span className="stat-label">saved XP</span>
+              </div>
+              <div className="stat-item">
+                <strong className="stat-value">{progressState.data ? progressState.data.completed_quests : 0}</strong>
+                <span className="stat-label">completed quests</span>
+              </div>
             </div>
           </section>
           {streakState.data && (
-            <section className="rail-card">
+            <section className="rail-card streak-rail-card">
               <div className="rail-title">
                 <span className="rail-icon streak-data-icon">
                   <Trophy size={18} />
@@ -352,18 +396,22 @@ export function HomeDashboard() {
                   <p>{streakState.data.timezone}</p>
                 </div>
               </div>
-              <div className="data-summary">
-                <strong>{streakState.data.current_streak}</strong>
-                <span>days now</span>
-                <strong>{streakState.data.longest_streak}</strong>
-                <span>longest</span>
+              <div className="stats-grid streak-stats-grid data-summary">
+                <div className="stat-item">
+                  <strong className="stat-value streak-val">{streakState.data.current_streak}</strong>
+                  <span className="stat-label">days now</span>
+                </div>
+                <div className="stat-item">
+                  <strong className="stat-value streak-val">{streakState.data.longest_streak}</strong>
+                  <span className="stat-label">longest streak</span>
+                </div>
               </div>
             </section>
           )}
           {activePhase && (
-            <section className="deadline-note">
+            <section className="deadline-note compact-phase-note">
               <div className="deadline-note-icon">
-                <Trophy size={19} />
+                <Trophy size={18} />
               </div>
               <div>
                 <span className="eyebrow">CURRENT PHASE</span>
@@ -372,8 +420,8 @@ export function HomeDashboard() {
               </div>
             </section>
           )}
-          <section className="planning-summary" aria-label="Planning summary">
-            <div>
+          <section className="planning-summary compact-planning" aria-label="Planning summary">
+            <div className="planning-row">
               <strong>Next deadline</strong>
               {nextDeadline ? (
                 <span>
@@ -386,7 +434,7 @@ export function HomeDashboard() {
                 Manage deadlines <ArrowRight size={13} />
               </Link>
             </div>
-            <div>
+            <div className="planning-row">
               <strong>{overdueDeadlineCount} overdue</strong>
               <span>Weekly review {data?.currentReview.review ? "saved" : "not written yet"}</span>
               <Link href="/weekly-review">
@@ -398,7 +446,7 @@ export function HomeDashboard() {
             {progressState.data
               ? `${progressState.data.completed_quests} of ${progressState.data.total_quests} quests complete · ${progressState.data.total_xp} XP earned.`
               : "Progress totals are loading from the API."}{" "}
-            Streaks count distinct local calendar days.
+            Streaks count distinct calendar days.
           </p>
         </aside>
       </div>
