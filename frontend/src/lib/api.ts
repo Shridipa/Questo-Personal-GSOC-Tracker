@@ -1,9 +1,18 @@
 import type { Quest, RoadmapPhase } from "@/lib/quest-data";
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000").replace(
-  /\/+$/,
-  "",
-);
+const DEFAULT_API_BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://questo-personal-gsoc-tracker.onrender.com"
+    : "http://127.0.0.1:8000";
+const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+const configuredApiUrlIsLocal =
+  configuredApiBaseUrl !== undefined &&
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(configuredApiBaseUrl);
+const API_BASE_URL = (
+  process.env.NODE_ENV === "production" && configuredApiUrlIsLocal
+    ? DEFAULT_API_BASE_URL
+    : (configuredApiBaseUrl ?? DEFAULT_API_BASE_URL)
+).replace(/\/+$/, "");
 
 export type HealthResponse = { status: "ok" };
 
