@@ -8,11 +8,17 @@ const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 const configuredApiUrlIsLocal =
   configuredApiBaseUrl !== undefined &&
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(configuredApiBaseUrl);
-const API_BASE_URL = (
+const resolvedBaseUrl = (
   process.env.NODE_ENV === "production" && configuredApiUrlIsLocal
     ? DEFAULT_API_BASE_URL
     : (configuredApiBaseUrl ?? DEFAULT_API_BASE_URL)
 ).replace(/\/+$/, "");
+
+// Auto-correct any legacy URL missing the '-1' suffix
+const API_BASE_URL = resolvedBaseUrl.replace(
+  "https://questo-personal-gsoc-tracker.onrender.com",
+  "https://questo-personal-gsoc-tracker-1.onrender.com",
+);
 
 export type HealthResponse = { status: "ok" };
 
