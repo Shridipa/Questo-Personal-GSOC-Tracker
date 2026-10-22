@@ -78,7 +78,8 @@ allowed_origins = [
     for origin in os.environ.get(
         "QUESTLINE_CORS_ORIGINS",
         "http://localhost:3000,http://127.0.0.1:3000,"
-        "http://localhost:3002,http://127.0.0.1:3002",
+        "http://localhost:3002,http://127.0.0.1:3002,"
+        "https://questo-personal-gsoc-tracker-sq2i.vercel.app",
     ).split(",")
     if origin.strip()
 ]
