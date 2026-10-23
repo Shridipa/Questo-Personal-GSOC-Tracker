@@ -1,0 +1,849 @@
+/* ==========================================================================
+   Questo public landing page — a calm, premium extension of the app design
+   system. Uses the existing Questo tokens from globals.css.
+   ========================================================================== */
+
+.lp-page {
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.lp-container {
+  width: min(1120px, calc(100% - 2.5rem));
+  margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Splash (auth state resolving on /)
+   ----------------------------------------------------------------------- */
+
+.lp-splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  min-height: 100vh;
+  background: var(--cream);
+}
+
+.lp-splash img {
+  width: 64px;
+  height: 52px;
+  object-fit: contain;
+  animation: lp-breathe 1.6s ease-in-out infinite;
+}
+
+.lp-splash span {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+@keyframes lp-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Navbar
+   ----------------------------------------------------------------------- */
+
+.lp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 253, 247, 0.92);
+  border-bottom: 1.5px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+
+.lp-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 68px;
+}
+
+.lp-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 21px;
+  font-weight: 850;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+
+.lp-brand img {
+  width: 34px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.lp-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lp-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.4rem 0.9rem;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition:
+    color var(--lp-t, 180ms) ease,
+    background var(--lp-t, 180ms) ease;
+}
+
+.lp-nav-link:hover {
+  color: var(--ink);
+  background: var(--green-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   ----------------------------------------------------------------------- */
+
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.6rem 1.35rem;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.lp-btn:active {
+  transform: translateY(1px);
+}
+
+.lp-btn-primary {
+  background: var(--green-dark);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(35, 148, 75, 0.3);
+}
+
+.lp-btn-primary:hover {
+  background: #1c7a3d;
+}
+
+.lp-btn-ghost {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.lp-btn-ghost:hover {
+  border-color: var(--green);
+}
+
+/* --------------------------------------------------------------------------
+   Hero
+   ----------------------------------------------------------------------- */
+
+.lp-hero {
+  padding: 4.25rem 0 3.5rem;
+}
+
+.lp-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 3rem;
+  align-items: center;
+}
+
+.lp-eyebrow {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--green-dark);
+  background: var(--green-soft);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+}
+
+.lp-hero h1 {
+  margin: 1rem 0 0.9rem;
+  font-size: clamp(2.3rem, 1.6rem + 2.6vw, 3.7rem);
+  line-height: 1.08;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.lp-hero-sub {
+  margin: 0 0 1.6rem;
+  max-width: 54ch;
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.lp-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.lp-hero-reassurance {
+  margin: 1.1rem 0 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   Product preview (illustrative miniature of the app)
+   ----------------------------------------------------------------------- */
+
+.lp-preview {
+  position: relative;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 24px;
+  padding: 1.4rem;
+  box-shadow: 0 24px 60px rgba(38, 55, 75, 0.12);
+}
+
+.lp-preview-tag {
+  position: absolute;
+  top: -0.8rem;
+  right: 1.2rem;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+}
+
+.lp-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.lp-preview-head h3 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.lp-streak-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 14px;
+  font-weight: 700;
+  color: #92600a;
+  background: #fef6e0;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+}
+
+.lp-preview-progress {
+  margin-bottom: 1rem;
+}
+
+.lp-preview-track {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  overflow: hidden;
+}
+
+.lp-preview-track span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green) 0%, var(--green-dark) 100%);
+}
+
+.lp-preview-progress small {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.lp-mini-roadmap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.lp-mini-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.lp-mini-step i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.lp-mini-step.done i {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.lp-mini-step.now {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.lp-mini-step.now i {
+  background: var(--green-dark);
+  color: #ffffff;
+}
+
+.lp-mini-step.todo i {
+  background: #f1f5f0;
+  color: var(--muted);
+}
+
+.lp-mini-quest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--green-soft);
+  border: 1.5px solid #d4efdc;
+  border-radius: 14px;
+  padding: 0.8rem 0.95rem;
+  margin-bottom: 0.75rem;
+}
+
+.lp-mini-quest strong {
+  display: block;
+  font-size: 15.5px;
+}
+
+.lp-mini-quest small {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.lp-mini-quest .lp-mini-xp {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--green-dark);
+  white-space: nowrap;
+}
+
+.lp-mini-deadline {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: #fef6e0;
+  border: 1.5px solid #f4e3b8;
+  border-radius: 14px;
+  padding: 0.7rem 0.9rem;
+}
+
+.lp-mini-deadline i {
+  font-style: normal;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.lp-mini-deadline i strong {
+  display: block;
+  font-size: 17px;
+}
+
+.lp-mini-deadline i small {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.lp-mini-deadline p {
+  margin: 0;
+  font-size: 15px;
+}
+
+.lp-mini-deadline p strong {
+  display: block;
+  font-size: 15.5px;
+}
+
+.lp-mini-deadline p span {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   Sections shared
+   ----------------------------------------------------------------------- */
+
+.lp-section {
+  padding: 3.75rem 0;
+}
+
+.lp-section-head {
+  max-width: 62ch;
+  margin-bottom: 2.2rem;
+}
+
+.lp-section-head h2 {
+  margin: 0 0 0.6rem;
+  font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.35rem);
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.lp-section-head p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+/* Feature cards */
+
+.lp-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.lp-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  padding: 1.5rem 1.4rem;
+  box-shadow: 0 10px 28px rgba(38, 55, 75, 0.06);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.lp-feature:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 38px rgba(38, 55, 75, 0.1);
+}
+
+.lp-feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.lp-feature h3 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.lp-feature > p {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  flex: 1;
+}
+
+.lp-feature-visual {
+  margin-top: 0.4rem;
+  background: var(--cream);
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.lp-visual-milestone {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+.lp-visual-milestone i {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+.lp-visual-milestone.pending i {
+  background: #dde5dd;
+}
+
+.lp-visual-quest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.lp-visual-quest span:last-child {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--green-dark);
+  background: var(--green-soft);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+}
+
+.lp-visual-calendar {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.lp-visual-calendar span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.lp-visual-calendar span.hot {
+  background: #fef6e0;
+  border-color: #f4e3b8;
+  color: #92600a;
+}
+
+/* How it works */
+
+.lp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  counter-reset: lp-step;
+}
+
+.lp-step {
+  position: relative;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  padding: 1.5rem 1.4rem 1.4rem;
+  box-shadow: 0 10px 28px rgba(38, 55, 75, 0.06);
+}
+
+.lp-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--green-dark);
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 850;
+  margin-bottom: 0.85rem;
+  box-shadow: 0 6px 16px rgba(35, 148, 75, 0.3);
+}
+
+.lp-step h3 {
+  margin: 0 0 0.4rem;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.lp-step p {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Experience panel */
+
+.lp-experience {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.lp-experience ul {
+  list-style: none;
+  margin: 1.2rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.lp-experience li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 16.5px;
+  line-height: 1.55;
+}
+
+.lp-experience li svg {
+  color: var(--green-dark);
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.lp-exp-panel {
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 22px;
+  padding: 1.3rem;
+  box-shadow: 0 20px 50px rgba(38, 55, 75, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.lp-exp-block {
+  border: 1.5px solid var(--line);
+  border-radius: 15px;
+  padding: 0.9rem 1rem;
+}
+
+.lp-exp-block h4 {
+  margin: 0 0 0.5rem;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: none;
+}
+
+.lp-exp-block p {
+  margin: 0;
+}
+
+.lp-exp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 15.5px;
+  padding: 0.3rem 0;
+}
+
+.lp-exp-row span {
+  color: var(--muted);
+  font-size: 14.5px;
+}
+
+/* Final CTA */
+
+.lp-cta {
+  background:
+    radial-gradient(120% 160% at 100% 0%, rgba(88, 199, 118, 0.18) 0%, rgba(88, 199, 118, 0) 55%),
+    linear-gradient(180deg, var(--paper) 0%, var(--green-soft) 100%);
+  border: 1.5px solid #d4efdc;
+  border-radius: 26px;
+  padding: 3.25rem 2rem;
+  text-align: center;
+}
+
+.lp-cta h2 {
+  margin: 0 auto 0.6rem;
+  max-width: 24ch;
+  font-size: clamp(1.8rem, 1.4rem + 1.5vw, 2.5rem);
+  line-height: 1.18;
+  font-weight: 850;
+}
+
+.lp-cta p {
+  margin: 0 auto 1.5rem;
+  max-width: 52ch;
+  font-size: 17.5px;
+  color: var(--muted);
+}
+
+.lp-cta-login {
+  display: block;
+  margin-top: 1rem;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.lp-cta-login a {
+  color: var(--green-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Footer */
+
+.lp-footer {
+  border-top: 1.5px solid var(--line);
+  margin-top: 3.5rem;
+  padding: 2.5rem 0 3rem;
+}
+
+.lp-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.lp-footer-brand p {
+  margin: 0.55rem 0 0;
+  max-width: 42ch;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.lp-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  font-size: 15.5px;
+}
+
+.lp-footer-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 180ms ease;
+}
+
+.lp-footer-links a:hover {
+  color: var(--green-dark);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   ----------------------------------------------------------------------- */
+
+@media (max-width: 940px) {
+  .lp-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+  }
+
+  .lp-features,
+  .lp-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-experience {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .lp-container {
+    width: calc(100% - 2rem);
+  }
+
+  .lp-hero {
+    padding: 2.75rem 0 2.25rem;
+  }
+
+  .lp-hero h1 {
+    font-size: 2.1rem;
+  }
+
+  .lp-hero-sub {
+    font-size: 17px;
+  }
+
+  .lp-hero-ctas .lp-btn {
+    width: 100%;
+  }
+
+  .lp-nav-link {
+    padding: 0.4rem 0.6rem;
+  }
+
+  .lp-cta {
+    padding: 2.25rem 1.25rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion
+   ----------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-btn,
+  .lp-feature,
+  .lp-nav-link {
+    transition: none;
+  }
+
+  .lp-splash img {
+    animation: none;
+  }
+}

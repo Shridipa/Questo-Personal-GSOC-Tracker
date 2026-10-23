@@ -16,7 +16,7 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
-import { useMemo, useState, useEffect, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   fetchActivityHistory,
   fetchCurrentWeekReview,
@@ -43,14 +43,6 @@ function shiftIsoDate(value: string, days: number): string {
   if (parts.length !== 3 || parts.some(Number.isNaN)) return "";
   const [year, month, day] = parts;
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
-}
-
-function currentWeekStartIso(): string {
-  const now = new Date();
-  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const weekday = monday.getUTCDay();
-  monday.setUTCDate(monday.getUTCDate() - ((weekday + 6) % 7));
-  return monday.toISOString().slice(0, 10);
 }
 
 function formatWeekRange(startIso: string): string {
@@ -115,16 +107,11 @@ export function WeeklyReviewView() {
   const deadlinesState = useApiData(fetchDeadlines);
   const questsState = useApiData(fetchQuests);
 
-  // `new Date()` must only run client-side: Next.js statically prerenders this
-  // client component and rejects unstable values like the current time during
-  // the build. Compute the week only after mount.
-  const [week, setWeek] = useState<{ start: string; current: string } | null>(null);
-  useEffect(() => {
-    const current = currentWeekStartIso();
-    setWeek({ start: current, current });
-  }, []);
-  const currentWeekStart = week?.current ?? "";
-  const selectedStart = week?.start ?? "";
+  // The current week start comes from the API itself (server-side convention),
+  // so no client-side `new Date()` is needed and static prerendering stays safe.
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+  const currentWeekStart = currentState.data?.week_start ?? "";
+  const selectedStart = selectedWeek ?? currentWeekStart;
   const [draftOverride, setDraftOverride] = useState<ReviewFields>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
@@ -165,7 +152,7 @@ export function WeeklyReviewView() {
     (questsState.data ?? []).find((quest) => quest.status === "available") ??
     null;
 
-  if (currentState.loading || activityState.loading || !week) {
+  if (currentState.loading || activityState.loading || !currentWeekStart) {
     return <LoadingSkeletons label="Loading weekly review" />;
   }
   if (currentState.error) {
@@ -173,8 +160,8 @@ export function WeeklyReviewView() {
   }
 
   function selectWeek(startIso: string) {
-    if (!week || startIso > week.current) return;
-    setWeek({ ...week, start: startIso });
+    if (!currentWeekStart || startIso > currentWeekStart) return;
+    setSelectedWeek(startIso === currentWeekStart ? null : startIso);
     setDraftOverride(undefined);
     setError(undefined);
     setSuccess(undefined);
@@ -189,9 +176,7 @@ export function WeeklyReviewView() {
     try {
       const saved = await saveWeeklyReview(draft, savedReview?.id);
       setDraftOverride(reviewToFields(saved));
-      setSuccess(
-        `Your review for ${formatWeekRange(saved.week_start)} is saved on the server.`,
-      );
+      setSuccess(`Your review for ${formatWeekRange(saved.week_start)} is saved on the server.`);
       historyState.retry();
       if (saved.week_start === currentState.data?.week_start) currentState.retry();
     } catch (reason) {
@@ -326,8 +311,8 @@ export function WeeklyReviewView() {
                   <div>
                     <strong>{formatWeekRange(day.date).split(" – ")[0]}</strong>
                     <p>
-                      {day.quests_completed} quest{day.quests_completed === 1 ? "" : "s"} completed ·{" "}
-                      {day.xp_earned} XP earned
+                      {day.quests_completed} quest{day.quests_completed === 1 ? "" : "s"} completed
+                      · {day.xp_earned} XP earned
                     </p>
                   </div>
                 </li>

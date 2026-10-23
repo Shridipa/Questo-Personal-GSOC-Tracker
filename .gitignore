@@ -21,3 +21,4 @@ data/*
 !data/.gitkeep
 .DS_Store
 *.py[cod]
+powershell.bat

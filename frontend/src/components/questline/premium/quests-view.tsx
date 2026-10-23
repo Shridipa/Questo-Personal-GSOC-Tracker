@@ -306,7 +306,9 @@ export function QuestsView() {
                   </span>
                 )}
                 <div className="qo-quest-card-head">
-                  <StatusBadge tone={statusTone(quest.status)}>{statusLabel(quest.status)}</StatusBadge>
+                  <StatusBadge tone={statusTone(quest.status)}>
+                    {statusLabel(quest.status)}
+                  </StatusBadge>
                   <span className={`quest-category ${quest.category.toLowerCase()}`}>
                     {quest.category}
                   </span>

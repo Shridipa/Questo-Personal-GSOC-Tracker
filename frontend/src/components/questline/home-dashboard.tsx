@@ -5,11 +5,16 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  CheckCircle2,
   Clock3,
+  Flame,
   LockKeyhole,
+  MapPin,
   Sparkles,
   Star,
+  Target,
   Trophy,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
@@ -163,14 +168,21 @@ export function HomeDashboard() {
 
           <article className="daily-quest-card next-quest-card">
             <div className="daily-card-top">
-              <span className="daily-label">
-                <span className="live-dot" />{" "}
-                {allQuestsCompleted
-                  ? "ALL QUESTS COMPLETE"
-                  : currentQuest
-                    ? "IN PROGRESS"
-                    : "YOUR NEXT QUEST"}
-              </span>
+              <div className="daily-status-group">
+                <span className="daily-label">
+                  <span className="live-dot" />{" "}
+                  {allQuestsCompleted
+                    ? "ALL QUESTS COMPLETE"
+                    : currentQuest
+                      ? "IN PROGRESS"
+                      : "YOUR NEXT QUEST"}
+                </span>
+                {!allQuestsCompleted && nextQuest && (
+                  <span className="next-quest-pulse-badge">
+                    <Zap size={11} aria-hidden="true" /> Next Action
+                  </span>
+                )}
+              </div>
               {nextQuest && <span className="date-chip">{nextQuest.phase}</span>}
               {allQuestsCompleted && <span className="date-chip gold-chip">🎉 All Done</span>}
             </div>
@@ -211,11 +223,11 @@ export function HomeDashboard() {
                 <div className="daily-copy">
                   <div className="quest-header-tags">
                     <span className="quest-category learn">
-                      {nextQuest ? `${nextQuest.category} · ${nextQuest.phase}` : "NO CURRENT QUEST"}
+                      {nextQuest
+                        ? `${nextQuest.category} · ${nextQuest.phase}`
+                        : "NO CURRENT QUEST"}
                     </span>
-                    {nextQuest && (
-                      <span className="quest-xp-badge">+{nextQuest.xp} XP</span>
-                    )}
+                    {nextQuest && <span className="quest-xp-badge">+{nextQuest.xp} XP</span>}
                   </div>
                   <h2>{nextQuest?.title ?? "No available quest is configured"}</h2>
                   <p>
@@ -232,33 +244,38 @@ export function HomeDashboard() {
                       <span className="meta-date">Target: {nextQuest.date}</span>
                     )}
                   </div>
-                  {nextQuest && (() => {
-                    const resources = getQuestResources(nextQuest.id);
-                    const topResource = resources[0];
-                    if (!topResource) return null;
-                    return (
-                      <div className="next-quest-resource-block">
-                        <span className="resource-lead">Recommended resource:</span>
-                        <a
-                          href={topResource.url}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                          className="next-quest-resource-link"
-                        >
-                          <BookOpen size={13} aria-hidden="true" />
-                          <span>{topResource.title}</span>
-                          <ArrowRight size={13} aria-hidden="true" />
-                        </a>
-                      </div>
-                    );
-                  })()}
+                  {nextQuest &&
+                    (() => {
+                      const resources = getQuestResources(nextQuest.id);
+                      const topResource = resources[0];
+                      if (!topResource) return null;
+                      return (
+                        <div className="next-quest-resource-block">
+                          <span className="resource-lead">Recommended resource:</span>
+                          <a
+                            href={topResource.url}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                            className="next-quest-resource-link"
+                          >
+                            <BookOpen size={13} aria-hidden="true" />
+                            <span>{topResource.title}</span>
+                            <ArrowRight size={13} aria-hidden="true" />
+                          </a>
+                        </div>
+                      );
+                    })()}
                   <button
-                    className="button button-primary start-quest action-next-quest"
+                    className="button button-primary start-quest action-next-quest hero-action-btn"
                     disabled={!nextQuest}
                     onClick={() => nextQuest && openQuest(nextQuest)}
                     type="button"
                   >
-                    {nextQuest?.status === "current" ? "Continue quest" : "Start quest"}{" "}
+                    <span>
+                      {nextQuest?.status === "current"
+                        ? "Continue Current Quest"
+                        : "Start Quest Now"}
+                    </span>
                     <ArrowRight size={17} />
                   </button>
                 </div>
@@ -356,54 +373,64 @@ export function HomeDashboard() {
         </section>
 
         <aside aria-label="Roadmap information" className="home-rail">
-          <section className="rail-card stats-rail-card">
+          <section className="rail-card stats-rail-card compact-stats-card">
             <div className="rail-title">
               <span className="rail-icon goal-icon">
-                <Trophy size={18} />
+                <Trophy size={16} />
               </span>
               <div>
                 <h3>Path at a glance</h3>
-                <p>Loaded from your roadmap</p>
+                <p>Personal roadmap totals</p>
               </div>
             </div>
-            <div className="stats-grid data-summary">
+            <div className="stats-grid data-summary compact-grid">
               <div className="stat-item">
+                <span className="stat-label">
+                  <Target size={11} aria-hidden="true" className="stat-sub-icon" /> Quests
+                </span>
                 <strong className="stat-value">{quests.length}</strong>
-                <span className="stat-label">quests</span>
               </div>
               <div className="stat-item">
+                <span className="stat-label">
+                  <MapPin size={11} aria-hidden="true" className="stat-sub-icon" /> Phases
+                </span>
                 <strong className="stat-value">{phases.length}</strong>
-                <span className="stat-label">phases</span>
               </div>
-              <div className="stat-item">
-                <strong className="stat-value">{progressState.data ? progressState.data.total_xp : 0}</strong>
-                <span className="stat-label">saved XP</span>
+              <div className="stat-item stat-item-xp">
+                <span className="stat-label">
+                  <Star size={11} aria-hidden="true" className="stat-sub-icon" /> Total XP
+                </span>
+                <strong className="stat-value">
+                  {progressState.data ? progressState.data.total_xp : 0}
+                </strong>
               </div>
-              <div className="stat-item">
-                <strong className="stat-value">{progressState.data ? progressState.data.completed_quests : 0}</strong>
-                <span className="stat-label">completed quests</span>
+              <div className="stat-item stat-item-done">
+                <span className="stat-label">
+                  <CheckCircle2 size={11} aria-hidden="true" className="stat-sub-icon" /> Done
+                </span>
+                <strong className="stat-value">
+                  {progressState.data ? progressState.data.completed_quests : 0}
+                </strong>
               </div>
             </div>
           </section>
+
           {streakState.data && (
-            <section className="rail-card streak-rail-card">
-              <div className="rail-title">
-                <span className="rail-icon streak-data-icon">
-                  <Trophy size={18} />
-                </span>
-                <div>
-                  <h3>Current streak</h3>
-                  <p>{streakState.data.timezone}</p>
+            <section className="rail-card streak-rail-card compact-streak-card">
+              <div className="streak-compact-layout">
+                <div className="streak-badge-orb" aria-hidden="true">
+                  <Flame size={20} className="flame-active-glow" />
                 </div>
-              </div>
-              <div className="stats-grid streak-stats-grid data-summary">
-                <div className="stat-item">
-                  <strong className="stat-value streak-val">{streakState.data.current_streak}</strong>
-                  <span className="stat-label">days now</span>
-                </div>
-                <div className="stat-item">
-                  <strong className="stat-value streak-val">{streakState.data.longest_streak}</strong>
-                  <span className="stat-label">longest streak</span>
+                <div className="streak-badge-details">
+                  <div className="streak-hero-reading">
+                    <strong className="streak-hero-number">
+                      {streakState.data.current_streak}
+                    </strong>
+                    <span className="streak-hero-text">day streak</span>
+                  </div>
+                  <div className="streak-meta-pill">
+                    <span>Best: {streakState.data.longest_streak} days</span>
+                  </div>
                 </div>
               </div>
             </section>

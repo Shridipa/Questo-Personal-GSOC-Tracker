@@ -48,12 +48,14 @@ export default function ForgotPasswordPage() {
 
         <h1 className="auth-title">Reset your password</h1>
         <p className="auth-subtitle">
-          Enter the email associated with your Questo account and we&apos;ll send a secure password reset link.
+          Enter the email associated with your Questo account and we&apos;ll send a secure password
+          reset link.
         </p>
 
         {!isConfigured && (
           <div className="auth-notice-box" role="alert">
-            <strong>Configuration note:</strong> Supabase credentials must be configured for password reset emails.
+            <strong>Configuration note:</strong> Supabase credentials must be configured for
+            password reset emails.
           </div>
         )}
 
@@ -66,7 +68,8 @@ export default function ForgotPasswordPage() {
         {submitted ? (
           <div className="auth-submitted-block">
             <div className="auth-success-box" role="status">
-              <Check size={16} /> If an account exists for <strong>{email}</strong>, a password reset link has been dispatched to your inbox.
+              <Check size={16} /> If an account exists for <strong>{email}</strong>, a password
+              reset link has been dispatched to your inbox.
             </div>
             <p className="auth-tip">
               Check your spam or junk folder if the email does not appear in a few minutes.

@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
@@ -68,65 +61,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = useCallback(
-    async ({ email, password }: { email: string; password: string }) => {
-      if (!isSupabaseConfigured) {
-        return {
-          error: new Error(
-            "Supabase is not configured yet. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment variables.",
-          ),
-        };
-      }
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-        if (error) return { error };
-        setSession(data.session);
-        setUser(data.user);
-        return { error: null };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to sign in";
-        return { error: new Error(message) };
-      }
-    },
-    [],
-  );
+  const signIn = useCallback(async ({ email, password }: { email: string; password: string }) => {
+    if (!isSupabaseConfigured) {
+      return {
+        error: new Error(
+          "Supabase is not configured yet. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment variables.",
+        ),
+      };
+    }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) return { error };
+      setSession(data.session);
+      setUser(data.user);
+      return { error: null };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to sign in";
+      return { error: new Error(message) };
+    }
+  }, []);
 
-  const signUp = useCallback(
-    async ({ email, password }: { email: string; password: string }) => {
-      if (!isSupabaseConfigured) {
-        return {
-          error: new Error(
-            "Supabase is not configured yet. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment variables.",
-          ),
-          needsEmailVerification: false,
-        };
-      }
-      try {
-        const redirectTo =
-          typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
+  const signUp = useCallback(async ({ email, password }: { email: string; password: string }) => {
+    if (!isSupabaseConfigured) {
+      return {
+        error: new Error(
+          "Supabase is not configured yet. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment variables.",
+        ),
+        needsEmailVerification: false,
+      };
+    }
+    try {
+      const redirectTo =
+        typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
 
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            emailRedirectTo: redirectTo,
-          },
-        });
-        if (error) return { error, needsEmailVerification: false };
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: redirectTo,
+        },
+      });
+      if (error) return { error, needsEmailVerification: false };
 
-        // If Supabase requires email verification, session will be null
-        const needsEmailVerification = Boolean(data.user && !data.session);
-        return { error: null, needsEmailVerification };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to create account";
-        return { error: new Error(message), needsEmailVerification: false };
-      }
-    },
-    [],
-  );
+      // If Supabase requires email verification, session will be null
+      const needsEmailVerification = Boolean(data.user && !data.session);
+      return { error: null, needsEmailVerification };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create account";
+      return { error: new Error(message), needsEmailVerification: false };
+    }
+  }, []);
 
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured) {
@@ -154,9 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const redirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/reset-password`
-          : undefined;
+        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
 
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo,
@@ -198,8 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return { error };
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to resend verification email";
+      const message = err instanceof Error ? err.message : "Failed to resend verification email";
       return { error: new Error(message) };
     }
   }, []);

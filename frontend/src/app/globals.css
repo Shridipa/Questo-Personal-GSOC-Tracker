@@ -1,5 +1,7 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 @import "./premium.css";
+@import "./landing.css";
 
 :root {
   --cream: #fffdf7;
@@ -17,7 +19,9 @@
   --amber: #f4bd4b;
   --lavender: #efeaff;
   --shadow: 0 12px 32px rgba(38, 55, 75, 0.06);
-  --font-body: Arial, Helvetica, sans-serif;
+  --font-body:
+    "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Outfit", "Plus Jakarta Sans", -apple-system, sans-serif;
   color-scheme: light;
 }
 
@@ -2165,19 +2169,69 @@ button {
 }
 
 .phase-status {
-  padding: 5px 7px;
+  padding: 5px 8px;
   border-radius: 6px;
   color: #87929b;
   background: #f2f4f4;
-  font-size: 7px;
+  font-size: 7.5px;
   font-weight: 850;
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
 
 .phase-status.now {
-  color: #339a51;
-  background: #e9f8ec;
+  color: #1e873e;
+  background: #e8f8eb;
+  border: 1px solid #c7eed0;
+}
+
+.phase-status.done {
+  color: #8f6408;
+  background: #fef7e2;
+  border: 1px solid #fae6a6;
+}
+
+.roadmap-done .roadmap-phase-mark > span {
+  border-color: #f0cb60;
+  color: #9c6c0a;
+  background: #fff8e0;
+}
+
+.roadmap-phase-progress-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0 12px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: #f8faf8;
+  border: 1px solid #ebf2eb;
+}
+
+.roadmap-phase-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #e3ece3;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.roadmap-phase-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #58c776 0%, #23944b 100%);
+  border-radius: 999px;
+  transition: width 300ms ease;
+}
+
+.roadmap-phase-progress-caption {
+  color: #6a7c70;
+  font-size: 8.5px;
+  font-weight: 600;
+}
+
+.roadmap-phase-progress-caption strong {
+  color: #23944b;
 }
 
 .roadmap-phase-body > p {
@@ -2247,6 +2301,38 @@ button {
 .phase-milestone strong {
   margin-right: 4px;
   color: #806a35;
+}
+
+/* Level Tier Progress in Progress Hero */
+.progress-level-track-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 12px;
+  max-width: 320px;
+}
+
+.progress-level-track {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(36, 49, 70, 0.1);
+  overflow: hidden;
+}
+
+.progress-level-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4d9fe8 0%, #8765e3 100%);
+  transition: width 400ms ease;
+}
+
+.progress-level-caption {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #5d6d87;
+  letter-spacing: 0.2px;
 }
 
 .progress-hero {
@@ -4365,51 +4451,209 @@ button {
   min-height: 55vh;
 }
 
-.stats-grid,
-.data-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 10px;
-  margin-top: 12px;
+/* ---------- Next Action & Dashboard Card Enhancements ---------- */
+.daily-status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.stat-item {
+.next-quest-pulse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e8f8eb;
+  border: 1px solid #9de3ad;
+  color: #1b7a37;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  animation: pulse-border 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(46, 163, 84, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(46, 163, 84, 0);
+  }
+}
+
+.hero-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #27a652 0%, #1a833d 100%);
+  color: #fff;
+  border: 0;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 750;
+  box-shadow: 0 6px 18px rgba(39, 166, 82, 0.28);
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.hero-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(39, 166, 82, 0.38);
+}
+
+/* ---------- Compact Rail Cards & Perfect 2x2 Grid ---------- */
+.compact-stats-card {
+  padding: 12px 14px;
+}
+
+.compact-stats-card .rail-title {
+  margin-bottom: 8px;
+}
+
+.stats-grid.compact-grid,
+.data-summary.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 8px;
+  margin-top: 6px;
+}
+
+.compact-grid .stat-item {
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   border-radius: 10px;
   background: #f7faf7;
-  border: 1px solid #e7f0e7;
+  border: 1px solid #e5eee5;
   min-width: 0;
+  box-sizing: border-box;
 }
 
-.stat-value {
-  color: #38864f;
-  font-size: 20px;
+.stat-sub-icon {
+  color: #649673;
+  flex-shrink: 0;
+}
+
+.stat-item-xp {
+  background: #fffcf4 !important;
+  border-color: #f7ebd0 !important;
+}
+
+.stat-item-xp .stat-value {
+  color: #b07d18 !important;
+}
+
+.stat-item-xp .stat-sub-icon {
+  color: #c99320 !important;
+}
+
+.stat-item-done {
+  background: #f2faf3 !important;
+  border-color: #d4ebd7 !important;
+}
+
+.stat-item-done .stat-value {
+  color: #1e873e !important;
+}
+
+.compact-grid .stat-value {
+  color: #2e4a36;
+  font-size: 18px;
   font-weight: 850;
   line-height: 1.1;
   letter-spacing: -0.4px;
+  margin-top: 1px;
 }
 
-.stat-value.streak-val {
-  color: #d16342;
+.compact-grid .stat-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6c7b88;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
-.stat-label {
-  color: #7b8895;
+/* ---------- Compact Streak Card ---------- */
+.compact-streak-card {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #fffcfb 0%, #fff6f2 100%);
+  border: 1px solid #fadcd2;
+}
+
+.streak-compact-layout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.streak-badge-orb {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #ffefe8 0%, #ffe0d4 100%);
+  border: 1px solid #fad2c3;
+  color: #e35a32;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(227, 90, 50, 0.16);
+}
+
+.flame-active-glow {
+  color: #e55328;
+  filter: drop-shadow(0 2px 5px rgba(229, 83, 40, 0.4));
+}
+
+.streak-badge-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.streak-hero-reading {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.streak-hero-number {
+  color: #c94924;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.6px;
+}
+
+.streak-hero-text {
+  color: #7d4d3d;
   font-size: 11px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
-.streak-rail-card .stat-item {
-  background: #fff8f5;
-  border-color: #fae4dc;
+.streak-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9.5px;
+  color: #9c6857;
+  font-weight: 600;
 }
 
 .progress-unavailable {
@@ -4459,20 +4703,41 @@ button {
   .data-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px 8px;
-    margin-top: 8px;
+    margin-top: 6px;
   }
 
-  .stat-item {
-    padding: 6px 8px;
+  .compact-grid .stat-item {
+    padding: 6px 7px;
     border-radius: 8px;
   }
 
-  .stat-value {
-    font-size: 17px;
+  .compact-grid .stat-value {
+    font-size: 16px;
   }
 
-  .stat-label {
-    font-size: 9.5px;
+  .compact-grid .stat-label {
+    font-size: 8.5px;
+  }
+
+  .compact-streak-card {
+    padding: 10px 12px;
+  }
+
+  .streak-badge-orb {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .streak-hero-number {
+    font-size: 19px;
+  }
+
+  .hero-action-btn {
+    width: 100%;
+    min-height: 46px;
+    font-size: 13.5px;
+    justify-content: center;
   }
 }
 
@@ -4603,7 +4868,7 @@ button {
 
 .auth-panel-sub {
   font-size: 14px;
-  color: rgba(255,255,255,0.68);
+  color: rgba(255, 255, 255, 0.68);
   line-height: 1.6;
   margin: 0;
   max-width: 320px;
@@ -4622,14 +4887,14 @@ button {
   gap: 12px;
   padding: 13px 16px;
   border-radius: 14px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
   transition: background 0.2s;
 }
 
 .auth-stat-pill:hover {
-  background: rgba(255,255,255,0.11);
+  background: rgba(255, 255, 255, 0.11);
 }
 
 .auth-stat-icon {
@@ -4653,13 +4918,13 @@ button {
 
 .auth-stat-copy span {
   font-size: 11px;
-  color: rgba(255,255,255,0.52);
+  color: rgba(255, 255, 255, 0.52);
 }
 
 /* Brand panel footer */
 .auth-panel-footer {
   font-size: 11px;
-  color: rgba(255,255,255,0.34);
+  color: rgba(255, 255, 255, 0.34);
   position: relative;
   z-index: 1;
 }
@@ -4759,7 +5024,7 @@ button {
 }
 
 .auth-notice-box code {
-  background: rgba(0,0,0,0.06);
+  background: rgba(0, 0, 0, 0.06);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 10.5px;
@@ -4849,7 +5114,9 @@ button {
   color: var(--navy, #243146);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.16s, box-shadow 0.16s;
+  transition:
+    border-color 0.16s,
+    box-shadow 0.16s;
 }
 
 .input-icon-wrapper input::placeholder {
@@ -4881,7 +5148,9 @@ button {
   color: #94a3b0;
   cursor: pointer;
   border-radius: 8px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   z-index: 2;
 }
 
@@ -4911,10 +5180,18 @@ button {
   transition: background 0.25s;
 }
 
-.strength-segment.filled-weak    { background: #e55a3c; }
-.strength-segment.filled-fair    { background: #f59e0b; }
-.strength-segment.filled-good    { background: #3db860; }
-.strength-segment.filled-strong  { background: #1a8f3f; }
+.strength-segment.filled-weak {
+  background: #e55a3c;
+}
+.strength-segment.filled-fair {
+  background: #f59e0b;
+}
+.strength-segment.filled-good {
+  background: #3db860;
+}
+.strength-segment.filled-strong {
+  background: #1a8f3f;
+}
 
 .password-strength-label {
   font-size: 10.5px;
@@ -4923,10 +5200,18 @@ button {
   transition: color 0.25s;
 }
 
-.password-strength-label.weak   { color: #e55a3c; }
-.password-strength-label.fair   { color: #f59e0b; }
-.password-strength-label.good   { color: #3db860; }
-.password-strength-label.strong { color: #1a8f3f; }
+.password-strength-label.weak {
+  color: #e55a3c;
+}
+.password-strength-label.fair {
+  color: #f59e0b;
+}
+.password-strength-label.good {
+  color: #3db860;
+}
+.password-strength-label.strong {
+  color: #1a8f3f;
+}
 
 /* ---------- Remember me / Checkbox ---------- */
 .remember-row {
@@ -5113,8 +5398,12 @@ button {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Fade-in for auth cards */

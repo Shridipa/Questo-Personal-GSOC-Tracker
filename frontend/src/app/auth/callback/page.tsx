@@ -51,7 +51,13 @@ function AuthCallbackContent() {
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense fallback={<div className="auth-container"><div className="auth-card skeleton" /></div>}>
+    <Suspense
+      fallback={
+        <div className="auth-container">
+          <div className="auth-card skeleton" />
+        </div>
+      }
+    >
       <AuthCallbackContent />
     </Suspense>
   );

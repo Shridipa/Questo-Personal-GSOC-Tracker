@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { ArrowRight, Eye, EyeOff, Flame, Lock, Mail, Map, Star, Target } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -13,13 +13,21 @@ function LoginForm() {
   const redirectTarget = searchParams.get("redirect") || "/";
   const safeRedirect = redirectTarget.startsWith("/") ? redirectTarget : "/";
 
-  const { signIn, isConfigured } = useAuth();
+  const { signIn, isConfigured, user, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Already authenticated visitors skip the login form entirely.
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace(safeRedirect);
+      router.refresh();
+    }
+  }, [authLoading, user, router, safeRedirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +59,15 @@ function LoginForm() {
     router.refresh();
   };
 
+  if (!authLoading && user) {
+    return (
+      <div aria-label="Taking you to your dashboard" className="lp-splash" role="status">
+        <Image alt="Questo bird logo" height={386} src="/icons/questo-phoenix.png" width={579} />
+        <span>Already signed in — heading to your dashboard…</span>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-split">
       {/* ── Left brand panel (desktop only) ── */}
@@ -68,7 +85,8 @@ function LoginForm() {
 
         <div className="auth-panel-body">
           <h2 className="auth-panel-headline">
-            Welcome back to<br />
+            Welcome back to
+            <br />
             your <span>journey</span>.
           </h2>
           <p className="auth-panel-sub">
@@ -132,8 +150,7 @@ function LoginForm() {
 
           {!isConfigured && (
             <div className="auth-notice-box" role="alert">
-              <strong>Setup needed:</strong> Add{" "}
-              <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+              <strong>Setup needed:</strong> Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
               <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to enable cloud sign-in.
             </div>
           )}
@@ -243,4 +260,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-

@@ -124,7 +124,11 @@ export function DeadlinesView() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string>();
   const [draft, setDraft] = useState<DeadlineDraft>(emptyDraft);
-  const [fieldErrors, setFieldErrors] = useState<{ title?: string; due_date?: string; url?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    due_date?: string;
+    url?: string;
+  }>({});
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string>();
   const [notice, setNotice] = useState<string>();
@@ -251,9 +255,7 @@ export function DeadlinesView() {
       setConfirmTarget(null);
       deadlinesState.retry();
     } catch (reason) {
-      setFormError(
-        reason instanceof Error ? reason.message : "Could not delete this deadline.",
-      );
+      setFormError(reason instanceof Error ? reason.message : "Could not delete this deadline.");
       setConfirmTarget(null);
     } finally {
       setDeletePending(false);
@@ -278,9 +280,7 @@ export function DeadlinesView() {
             <div className="qo-next-deadline-copy">
               <span className="qo-next-deadline-label">
                 <Sparkles aria-hidden="true" size={14} />
-                {nextDeadline.classification === "overdue"
-                  ? "Most urgent right now"
-                  : "Next up"}
+                {nextDeadline.classification === "overdue" ? "Most urgent right now" : "Next up"}
               </span>
               <h3>{nextDeadline.title}</h3>
               <p>
@@ -288,7 +288,9 @@ export function DeadlinesView() {
               </p>
             </div>
             <div className="qo-next-deadline-actions">
-              <StatusBadge tone={urgencyTone(nextDeadline)}>{urgencyLabel(nextDeadline)}</StatusBadge>
+              <StatusBadge tone={urgencyTone(nextDeadline)}>
+                {urgencyLabel(nextDeadline)}
+              </StatusBadge>
               <button
                 className="qo-btn qo-btn-secondary"
                 onClick={() => openEdit(nextDeadline)}
@@ -366,10 +368,7 @@ export function DeadlinesView() {
           {categories.length > 1 && (
             <label className="qo-select-label">
               <span>Category</span>
-              <select
-                onChange={(event) => setCategory(event.target.value)}
-                value={category}
-              >
+              <select onChange={(event) => setCategory(event.target.value)} value={category}>
                 <option value="all">All categories</option>
                 {categories.map((item) => (
                   <option key={item} value={item}>
@@ -445,10 +444,10 @@ export function DeadlinesView() {
                   {deadline.category && (
                     <span className="qo-deadline-category">{deadline.category}</span>
                   )}
-                  {deadline.description && <p className="qo-deadline-notes">{deadline.description}</p>}
-                  {deadline.url && (
-                    <SafeExternalLink label="Open source link" url={deadline.url} />
+                  {deadline.description && (
+                    <p className="qo-deadline-notes">{deadline.description}</p>
                   )}
+                  {deadline.url && <SafeExternalLink label="Open source link" url={deadline.url} />}
                 </div>
                 <div className="qo-deadline-actions">
                   {deadline.status === "pending" && (
@@ -546,7 +545,9 @@ export function DeadlinesView() {
                 <label className="qo-field">
                   <span>Due time (optional)</span>
                   <input
-                    onChange={(event) => setDraft({ ...draft, due_time: event.target.value || null })}
+                    onChange={(event) =>
+                      setDraft({ ...draft, due_time: event.target.value || null })
+                    }
                     type="time"
                     value={draft.due_time ?? ""}
                   />

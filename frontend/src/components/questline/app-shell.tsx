@@ -89,7 +89,7 @@ function NavigationLinks({
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { user, signOut, isConfigured } = useAuth();
+  const { user, signOut, isLoading: authLoading } = useAuth();
   const [openMenuPath, setOpenMenuPath] = useState<string>();
   const moreOpen = openMenuPath === pathname;
   const isOnline = useSyncExternalStore(subscribeToNetworkStatus, getNetworkStatus, () => true);
@@ -157,6 +157,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
+  // `/` is auth-aware: while the session resolves (splash) or for signed-out
+  // visitors (public landing page) it renders standalone, outside the app shell.
+  const isStandaloneHome = pathname === "/" && (authLoading || !user);
+  if (isStandaloneHome) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">
@@ -175,7 +182,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             {user?.email ? user.email.slice(0, 1).toUpperCase() : "Q"}
           </div>
           <div className="profile-copy">
-            <strong>{user?.user_metadata?.full_name || (user?.email ? user.email.split("@")[0] : "Your learning journey")}</strong>
+            <strong>
+              {user?.user_metadata?.full_name ||
+                (user?.email ? user.email.split("@")[0] : "Your learning journey")}
+            </strong>
             <span>{user?.email ? "Cloud Synced" : "Local mode · Sign in to sync"}</span>
           </div>
         </div>

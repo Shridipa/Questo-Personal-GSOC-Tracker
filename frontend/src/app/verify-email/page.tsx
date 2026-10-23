@@ -56,13 +56,14 @@ function VerifyEmailContent() {
 
         <h1 className="auth-title">Check your inbox</h1>
         <p className="auth-subtitle">
-          We&apos;ve sent a verification link to{" "}
-          <strong>{emailParam || "your email"}</strong>. Click the link inside to verify your account and begin your journey.
+          We&apos;ve sent a verification link to <strong>{emailParam || "your email"}</strong>.
+          Click the link inside to verify your account and begin your journey.
         </p>
 
         {resendSuccess && (
           <div className="auth-success-box" role="status">
-            <Check size={16} /> A fresh verification email has been sent! Check your spam folder if it doesn&apos;t arrive soon.
+            <Check size={16} /> A fresh verification email has been sent! Check your spam folder if
+            it doesn&apos;t arrive soon.
           </div>
         )}
 
@@ -103,7 +104,13 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div className="auth-container"><div className="auth-card skeleton" /></div>}>
+    <Suspense
+      fallback={
+        <div className="auth-container">
+          <div className="auth-card skeleton" />
+        </div>
+      }
+    >
       <VerifyEmailContent />
     </Suspense>
   );

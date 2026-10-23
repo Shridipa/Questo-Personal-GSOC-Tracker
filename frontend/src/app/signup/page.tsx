@@ -3,8 +3,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, GitBranch, Lock, Mail, Sparkles, Star, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  GitBranch,
+  Lock,
+  Mail,
+  Sparkles,
+  Star,
+  Trophy,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 function getPasswordStrength(pw: string): { score: number; label: string; cls: string } {
@@ -23,7 +34,7 @@ function getPasswordStrength(pw: string): { score: number; label: string; cls: s
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signUp, isConfigured } = useAuth();
+  const { signUp, isConfigured, user, isLoading: authLoading } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +45,23 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   const strength = getPasswordStrength(password);
+
+  // Already authenticated visitors skip the sign-up form entirely.
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/");
+      router.refresh();
+    }
+  }, [authLoading, user, router]);
+
+  if (!authLoading && user) {
+    return (
+      <div aria-label="Taking you to your dashboard" className="lp-splash" role="status">
+        <Image alt="Questo bird logo" height={386} src="/icons/questo-phoenix.png" width={579} />
+        <span>Already signed in — heading to your dashboard…</span>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,11 +118,13 @@ export default function SignupPage() {
 
         <div className="auth-panel-body">
           <h2 className="auth-panel-headline">
-            Start your next<br />
+            Start your next
+            <br />
             <span>chapter</span>.
           </h2>
           <p className="auth-panel-sub">
-            Build skills, complete meaningful quests, and prepare for your next open-source opportunity.
+            Build skills, complete meaningful quests, and prepare for your next open-source
+            opportunity.
           </p>
 
           <div className="auth-panel-stats">
@@ -154,8 +184,7 @@ export default function SignupPage() {
 
           {!isConfigured && (
             <div className="auth-notice-box" role="alert">
-              <strong>Setup needed:</strong> Add{" "}
-              <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+              <strong>Setup needed:</strong> Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
               <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to enable cloud accounts.
             </div>
           )}

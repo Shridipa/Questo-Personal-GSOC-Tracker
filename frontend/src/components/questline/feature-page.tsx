@@ -46,12 +46,7 @@ import { useApiData } from "@/lib/use-api-data";
 import { useAuth } from "@/lib/auth-context";
 
 export type FeaturePageKey =
-  | "quests"
-  | "roadmap"
-  | "progress"
-  | "weekly-review"
-  | "deadlines"
-  | "settings";
+  "quests" | "roadmap" | "progress" | "weekly-review" | "deadlines" | "settings";
 
 const pageDetails: Record<FeaturePageKey, { eyebrow: string; title: string; subtitle: string }> = {
   quests: {
@@ -158,13 +153,27 @@ function RoadmapView() {
       </div>
       {phases.map((phase) => {
         const isCurrent = phase.title === currentPhaseTitle;
+        const phaseQuests = data?.quests.filter((q) => q.phase === phase.title) ?? [];
+        const phaseCompleted = phaseQuests.filter((q) => q.status === "completed").length;
+        const isPhaseCompleted = phaseQuests.length > 0 && phaseCompleted === phaseQuests.length;
+        const phasePct =
+          phaseQuests.length > 0 ? Math.round((phaseCompleted / phaseQuests.length) * 100) : 0;
+
         return (
           <article
-            className={`roadmap-card${isCurrent ? " roadmap-active" : " roadmap-upcoming"}`}
+            className={`roadmap-card${isCurrent ? " roadmap-active" : isPhaseCompleted ? " roadmap-done" : " roadmap-upcoming"}`}
             key={phase.id}
           >
             <div className="roadmap-phase-mark">
-              <span>{isCurrent ? <Flag size={18} /> : String(phase.id).padStart(2, "0")}</span>
+              <span>
+                {isPhaseCompleted ? (
+                  <CheckCircle2 size={18} />
+                ) : isCurrent ? (
+                  <Flag size={18} />
+                ) : (
+                  String(phase.id).padStart(2, "0")
+                )}
+              </span>
               {phase.id !== phases[phases.length - 1]?.id && <i />}
             </div>
             <div className="roadmap-phase-body">
@@ -180,11 +189,30 @@ function RoadmapView() {
                   </span>
                   <h2>{phase.title}</h2>
                 </div>
-                <span className={`phase-status${isCurrent ? " now" : ""}`}>
-                  {isCurrent ? "CURRENT" : "PLANNED"}
+                <span
+                  className={`phase-status${isPhaseCompleted ? " done" : isCurrent ? " now" : ""}`}
+                >
+                  {isPhaseCompleted ? "COMPLETED 🎉" : isCurrent ? "IN PROGRESS ⚡" : "PLANNED"}
                 </span>
               </div>
               <p>{phase.description}</p>
+              {phaseQuests.length > 0 && (
+                <div
+                  className="roadmap-phase-progress-bar-wrap"
+                  aria-label={`Phase progress: ${phaseCompleted} of ${phaseQuests.length} complete`}
+                >
+                  <div className="roadmap-phase-progress-track">
+                    <span
+                      className="roadmap-phase-progress-fill"
+                      style={{ width: `${phasePct}%` }}
+                    />
+                  </div>
+                  <small className="roadmap-phase-progress-caption">
+                    <strong>{phasePct}%</strong> ({phaseCompleted}/{phaseQuests.length} quests
+                    completed)
+                  </small>
+                </div>
+              )}
               <div className="roadmap-quest-preview">
                 {phase.quests.slice(0, 3).map((quest) => (
                   <span key={quest}>
@@ -220,6 +248,16 @@ function RoadmapView() {
       })}
     </div>
   );
+}
+
+function getExplorerLevel(totalXp: number) {
+  if (totalXp >= 1000)
+    return { level: 6, title: "Master Contributor", nextLevelXp: 1500, minXp: 1000 };
+  if (totalXp >= 600) return { level: 5, title: "GSoC Fellow", nextLevelXp: 1000, minXp: 600 };
+  if (totalXp >= 350) return { level: 4, title: "Git Pathfinder", nextLevelXp: 600, minXp: 350 };
+  if (totalXp >= 180) return { level: 3, title: "Core Builder", nextLevelXp: 350, minXp: 180 };
+  if (totalXp >= 60) return { level: 2, title: "Open Source Scout", nextLevelXp: 180, minXp: 60 };
+  return { level: 1, title: "Eager Explorer", nextLevelXp: 60, minXp: 0 };
 }
 
 function ProgressView() {
@@ -269,20 +307,44 @@ function ProgressView() {
       ? `${Math.round(activity.totals.xp_earned / activity.totals.active_days)} XP`
       : "—";
 
+  const totalXp = progress?.total_xp ?? 0;
+  const explorerTier = getExplorerLevel(totalXp);
+  const xpSpan = explorerTier.nextLevelXp - explorerTier.minXp;
+  const xpProgress = Math.max(0, totalXp - explorerTier.minXp);
+  const levelPct = Math.min(100, Math.round((xpProgress / (xpSpan || 1)) * 100));
+
   return (
     <div className="page-stack">
       <section className="progress-hero">
         <div className="progress-hero-copy">
-          <span className="eyebrow">SAVED QUEST PROGRESS</span>
+          <span className="eyebrow">
+            LEVEL {explorerTier.level} · {explorerTier.title.toUpperCase()}
+          </span>
           <h2>Every recorded step counts.</h2>
-          <p>XP and streaks are calculated from server-stored quest completions.</p>
+          <p>
+            {totalXp >= 1000
+              ? "You've reached Master Contributor level!"
+              : `${explorerTier.nextLevelXp - totalXp} XP until Level ${explorerTier.level + 1}`}
+          </p>
+          <div className="progress-level-track-wrap">
+            <div
+              className="progress-level-track"
+              role="progressbar"
+              aria-valuenow={levelPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <span className="progress-level-fill" style={{ width: `${levelPct}%` }} />
+            </div>
+            <span className="progress-level-caption">{levelPct}% toward next level tier</span>
+          </div>
         </div>
         <div className="level-medallion">
           <span>
             <Sparkles size={23} />
           </span>
-          <strong>{progress?.total_xp ?? 0} XP</strong>
-          <small>Total earned</small>
+          <strong>{totalXp} XP</strong>
+          <small>Level {explorerTier.level} Explorer</small>
         </div>
       </section>
       <div className="stat-grid">
@@ -650,7 +712,15 @@ function SettingsView() {
           </div>
         </div>
         {authLoading ? (
-          <div style={{ padding: "0.5rem 0", color: "var(--text-muted, #94a3b8)", fontSize: "0.875rem" }}>Loading account…</div>
+          <div
+            style={{
+              padding: "0.5rem 0",
+              color: "var(--text-muted, #94a3b8)",
+              fontSize: "0.875rem",
+            }}
+          >
+            Loading account…
+          </div>
         ) : user ? (
           <>
             <div className="setting-row" style={{ alignItems: "flex-start" }}>
@@ -658,7 +728,16 @@ function SettingsView() {
                 <strong>Signed-in account</strong>
                 <small>{user.email}</small>
               </span>
-              <span className="setting-value" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", color: "#10b981", fontWeight: 600 }}>
+              <span
+                className="setting-value"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  color: "#10b981",
+                  fontWeight: 600,
+                }}
+              >
                 <ShieldCheck size={14} />
                 {user.email_confirmed_at ? "Verified" : "Unverified"}
               </span>
@@ -668,7 +747,9 @@ function SettingsView() {
                 <strong>Cloud sync</strong>
                 <small>Your progress, quests, and settings save to the cloud.</small>
               </span>
-              <span className="setting-value" style={{ color: "#10b981", fontWeight: 600 }}>Active</span>
+              <span className="setting-value" style={{ color: "#10b981", fontWeight: 600 }}>
+                Active
+              </span>
             </div>
             <div className="setting-row">
               <span>
@@ -679,7 +760,13 @@ function SettingsView() {
                 className="button button-outline"
                 disabled={exporting}
                 onClick={() => void handleExport()}
-                style={{ fontSize: "0.8125rem", padding: "0.3rem 0.75rem", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                style={{
+                  fontSize: "0.8125rem",
+                  padding: "0.3rem 0.75rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
                 type="button"
               >
                 <Download size={14} /> {exporting ? "Exporting…" : "Export JSON"}
@@ -688,20 +775,37 @@ function SettingsView() {
             <div className="setting-row">
               <span>
                 <strong>Sync local guest progress</strong>
-                <small>Transfer any milestones or deadlines completed as guest into this account.</small>
+                <small>
+                  Transfer any milestones or deadlines completed as guest into this account.
+                </small>
               </span>
               <button
                 className="button button-outline"
                 disabled={syncingGuest}
                 onClick={() => void handleClaimGuest()}
-                style={{ fontSize: "0.8125rem", padding: "0.3rem 0.75rem", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                style={{
+                  fontSize: "0.8125rem",
+                  padding: "0.3rem 0.75rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
                 type="button"
               >
-                <RefreshCw size={14} className={syncingGuest ? "spin" : ""} /> {syncingGuest ? "Syncing…" : "Transfer guest data"}
+                <RefreshCw size={14} className={syncingGuest ? "spin" : ""} />{" "}
+                {syncingGuest ? "Syncing…" : "Transfer guest data"}
               </button>
             </div>
             {syncNotice && (
-              <div style={{ padding: "0.5rem 0.75rem", background: "#f0fdf4", color: "#166534", borderRadius: "8px", fontSize: "0.8125rem" }}>
+              <div
+                style={{
+                  padding: "0.5rem 0.75rem",
+                  background: "#f0fdf4",
+                  color: "#166534",
+                  borderRadius: "8px",
+                  fontSize: "0.8125rem",
+                }}
+              >
                 {syncNotice}
               </div>
             )}
@@ -713,7 +817,13 @@ function SettingsView() {
               <button
                 className="button button-outline"
                 onClick={() => void signOut()}
-                style={{ fontSize: "0.8125rem", padding: "0.3rem 0.75rem", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                style={{
+                  fontSize: "0.8125rem",
+                  padding: "0.3rem 0.75rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
                 type="button"
               >
                 <LogOut size={14} /> Log out
@@ -737,7 +847,14 @@ function SettingsView() {
               <a
                 className="button button-primary"
                 href="/login"
-                style={{ fontSize: "0.8125rem", padding: "0.3rem 0.75rem", display: "inline-flex", alignItems: "center", gap: "0.4rem", textDecoration: "none" }}
+                style={{
+                  fontSize: "0.8125rem",
+                  padding: "0.3rem 0.75rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  textDecoration: "none",
+                }}
               >
                 <LogIn size={14} /> Sign in
               </a>
