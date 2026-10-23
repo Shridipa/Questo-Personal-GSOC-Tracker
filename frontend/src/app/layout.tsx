@@ -17,11 +17,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Questo",
   },
-  icons: {
+    icons: {
     icon: "/icons/questo.svg",
     apple: "/icons/questo-phoenix.png",
   },
-  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
@@ -33,6 +32,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html data-scroll-behavior="smooth" lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />
+      </head>
       <body>
         <AuthProvider>
           <AppShell>{children}</AppShell>
