@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AppShell } from "@/components/questline/app-shell";
+import { AuthProvider } from "@/lib/auth-context";
+import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,11 +30,13 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html data-scroll-behavior="smooth" lang="en">
       <body>
-        <AppShell>{children}</AppShell>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -3,60 +3,55 @@
 import {
   ArrowRight,
   Bell,
-  CalendarDays,
-  Check,
   CheckCircle2,
   CircleHelp,
-  Clock3,
+  Download,
   ExternalLink,
   Flag,
   Flame,
-  Heart,
   Lightbulb,
-  LockKeyhole,
-  Pencil,
+  LogIn,
+  LogOut,
+  RefreshCw,
   Save,
   Settings2,
+  ShieldCheck,
   Sparkles,
   Star,
   Target,
-  Trash2,
   Trophy,
+  UserCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import type { FormEvent } from "react";
 import {
-  completeDeadline,
-  createDeadline,
-  deleteDeadline,
-  fetchDashboardData,
+  claimGuestData,
+  exportAccountData,
   fetchActivityHistory,
-  fetchCurrentWeekReview,
-  fetchDeadlines,
+  fetchDashboardData,
   fetchProgress,
-  fetchQuests,
   fetchSettings,
   fetchStreaks,
-  fetchWeeklyReviews,
   fetchXpHistory,
-  saveWeeklyReview,
   updateSettings,
-  updateDeadline,
-  type Deadline,
-  type DeadlineFields,
-  type ReviewFields,
   type SettingsUpdate,
   type UserSettings,
-  type WeeklyReview,
 } from "@/lib/api";
-import { QuestDetails } from "@/components/questline/quest-details";
-import type { Quest } from "@/lib/quest-data";
+import { QuestsView } from "@/components/questline/premium/quests-view";
+import { DeadlinesView } from "@/components/questline/premium/deadlines-view";
+import { WeeklyReviewView } from "@/components/questline/premium/weekly-review-view";
 import { getPhaseResources } from "@/lib/quest-resources";
 import { useApiData } from "@/lib/use-api-data";
+import { useAuth } from "@/lib/auth-context";
 
 export type FeaturePageKey =
-  "quests" | "roadmap" | "progress" | "weekly-review" | "deadlines" | "settings";
+  | "quests"
+  | "roadmap"
+  | "progress"
+  | "weekly-review"
+  | "deadlines"
+  | "settings";
 
 const pageDetails: Record<FeaturePageKey, { eyebrow: string; title: string; subtitle: string }> = {
   quests: {
@@ -131,123 +126,6 @@ function DataError({ message, retry }: { message: string; retry: () => void }) {
         Retry
       </button>
     </section>
-  );
-}
-
-function QuestList() {
-  const { data, error, loading, retry } = useApiData(fetchQuests);
-  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
-  const closeSelectedQuest = useCallback(() => {
-    setSelectedQuest(null);
-    retry();
-  }, [retry]);
-  if (loading) return <DataLoading label="Loading quests" />;
-  if (error) return <DataError message={error} retry={retry} />;
-
-  const quests = (data ?? []).filter((quest) => quest.id !== "welcome");
-  if (quests.length === 0) {
-    return (
-      <section className="data-state">
-        <h2>No quests are available yet</h2>
-        <p>The local API returned an empty quest list.</p>
-        <button className="button button-secondary" onClick={retry} type="button">
-          Refresh data
-        </button>
-      </section>
-    );
-  }
-  const completedCount = quests.filter((quest) => quest.status === "completed").length;
-  const plannedMinutes = quests.reduce((total, quest) => total + quest.minutes, 0);
-
-  return (
-    <div className="page-stack">
-      <section className="page-highlight quest-board-highlight">
-        <div className="highlight-icon green">
-          <Target size={23} />
-        </div>
-        <div>
-          <span className="eyebrow">QUESTS FROM THE LOCAL API</span>
-          <h2>Your contribution toolkit</h2>
-          <p>Complete a quest to save progress and earn its server-assigned XP reward.</p>
-        </div>
-        <div className="highlight-count">
-          <strong>
-            {completedCount}
-            <span>/{quests.length}</span>
-          </strong>
-          <small>marked complete</small>
-        </div>
-      </section>
-      <div className="list-heading">
-        <h2>Up next</h2>
-        <span>{plannedMinutes} planned minutes</span>
-      </div>
-      <div className="quest-list">
-        {quests.map((quest, index) => {
-          const isLocked = quest.status === "locked";
-          const isDone = quest.status === "completed";
-          return (
-            <article
-              className={`quest-list-card${isDone ? " quest-is-done" : ""}${isLocked ? " quest-is-locked" : ""}`}
-              key={quest.id}
-            >
-              <span className={`list-step${isDone ? " step-done" : ""}`}>
-                {isDone ? (
-                  <Check size={17} />
-                ) : isLocked ? (
-                  <LockKeyhole size={16} />
-                ) : (
-                  String(index + 1).padStart(2, "0")
-                )}
-              </span>
-              <div className="quest-list-copy">
-                <div className="quest-list-title-line">
-                  <h3>{quest.title}</h3>
-                  <span className={`quest-category ${quest.category.toLowerCase()}`}>
-                    {quest.category}
-                  </span>
-                </div>
-                <p>{quest.description}</p>
-                <div className="quest-list-meta">
-                  <span>
-                    <Clock3 size={14} /> {quest.minutes} min
-                  </span>
-                  <span>{quest.date}</span>
-                  <span>{quest.phase}</span>
-                </div>
-              </div>
-              <button
-                aria-label={
-                  isLocked ? `${quest.title} is locked` : `Open details for ${quest.title}`
-                }
-                className={`list-action${isDone ? " list-action-done" : ""}`}
-                disabled={isLocked}
-                onClick={() => setSelectedQuest(quest)}
-                type="button"
-              >
-                {isDone ? (
-                  <CheckCircle2 size={20} />
-                ) : isLocked ? (
-                  <LockKeyhole size={18} />
-                ) : (
-                  <ArrowRight size={19} />
-                )}
-              </button>
-            </article>
-          );
-        })}
-      </div>
-      <div className="gentle-note">
-        <Lightbulb size={18} />
-        <p>
-          <strong>No rush.</strong> Move quests around to fit your week. Missing a day never takes
-          away progress you&apos;ve earned.
-        </p>
-      </div>
-      {selectedQuest && (
-        <QuestDetails key={selectedQuest.id} onClose={closeSelectedQuest} quest={selectedQuest} />
-      )}
-    </div>
   );
 }
 
@@ -585,499 +463,48 @@ function formatXpTimestamp(value: string, timezone: string): string {
   }).format(new Date(value));
 }
 
-function shiftIsoDate(value: string, days: number): string {
-  const parts = value.split("-").map(Number);
-  if (parts.length !== 3 || parts.some(Number.isNaN)) return "";
-  const [year, month, day] = parts;
-  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
-}
-
-function reviewFields(review: WeeklyReview): ReviewFields {
-  return {
-    week_start: review.week_start,
-    week_end: review.week_end,
-    accomplishments: review.accomplishments,
-    challenges: review.challenges,
-    lessons_learned: review.lessons_learned,
-    next_priorities: review.next_priorities,
-  };
-}
-
-function WeeklyReviewView() {
-  const currentState = useApiData(fetchCurrentWeekReview);
-  const historyState = useApiData(fetchWeeklyReviews);
-  const [draftOverride, setDraftOverride] = useState<ReviewFields>();
-  const [reviewIdOverride, setReviewIdOverride] = useState<string | null>();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string>();
-  const [success, setSuccess] = useState<string>();
-  const currentReview = currentState.data?.review ?? null;
-  const defaultDraft: ReviewFields = {
-    week_start: currentState.data?.week_start ?? "",
-    week_end: currentState.data ? shiftIsoDate(currentState.data.week_start, 6) : "",
-    accomplishments: "",
-    challenges: "",
-    lessons_learned: "",
-    next_priorities: "",
-  };
-  const draft = draftOverride ?? (currentReview ? reviewFields(currentReview) : defaultDraft);
-  const reviewId =
-    reviewIdOverride === undefined ? currentReview?.id : (reviewIdOverride ?? undefined);
-
-  if (currentState.loading) return <DataLoading label="Loading weekly review" />;
-  if (currentState.error) {
-    return <DataError message={currentState.error} retry={currentState.retry} />;
-  }
-
-  function editReview(review: WeeklyReview) {
-    setDraftOverride(reviewFields(review));
-    setReviewIdOverride(review.id);
-    setError(undefined);
-    setSuccess(undefined);
-  }
-
-  async function saveReview(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (saving) return;
-    setSaving(true);
-    setError(undefined);
-    setSuccess(undefined);
-    try {
-      const saved = await saveWeeklyReview(draft, reviewId);
-      setReviewIdOverride(saved.id);
-      setDraftOverride(reviewFields(saved));
-      setSuccess("Your weekly review is saved.");
-      historyState.retry();
-      if (saved.week_start === currentState.data?.week_start) currentState.retry();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not save this weekly review.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function updateDraft(field: keyof ReviewFields, value: string) {
-    const existing =
-      field === "week_start"
-        ? (historyState.data?.find((review) => review.week_start === value) ??
-          (currentReview?.week_start === value ? currentReview : undefined))
-        : undefined;
-    setDraftOverride(
-      existing
-        ? reviewFields(existing)
-        : {
-            ...draft,
-            [field]: value,
-            ...(field === "week_start" ? { week_end: shiftIsoDate(value, 6) } : {}),
-          },
-    );
-    if (field === "week_start") {
-      setReviewIdOverride(existing?.id ?? null);
-    }
-    setError(undefined);
-    setSuccess(undefined);
-  }
-
-  return (
-    <div className="page-stack review-stack">
-      <section className="review-intro">
-        <span className="review-sun">
-          <Sparkles size={24} />
-        </span>
-        <div>
-          <h2>Take a breath. You showed up.</h2>
-          <p>Save a private reflection for the week and revisit it whenever you need.</p>
-        </div>
-      </section>
-      <form className="review-form persistent-form" onSubmit={(event) => void saveReview(event)}>
-        <div className="form-date-row">
-          <label>
-            Week starts (Monday)
-            <input
-              onChange={(event) => updateDraft("week_start", event.target.value)}
-              required
-              type="date"
-              value={draft.week_start}
-            />
-          </label>
-          <p>Week ends Sunday · {draft.week_end || "Select a Monday to begin"}</p>
-        </div>
-        {(
-          [
-            ["accomplishments", "What did you accomplish?", "Small steps count."],
-            ["challenges", "Challenges or blockers", "What made progress harder?"],
-            ["lessons_learned", "What did you learn?", "Capture something you want to remember."],
-            ["next_priorities", "Priorities for next week", "Choose a few realistic next steps."],
-          ] as const
-        ).map(([field, title, hint], index) => (
-          <label className="review-prompt" key={field}>
-            <span aria-hidden="true" className="prompt-number">
-              {String(index + 1).padStart(2, "0")}
-            </span>
-            <span>
-              <strong>{title}</strong>
-              <small>{hint}</small>
-              <textarea
-                maxLength={10000}
-                onChange={(event) => updateDraft(field, event.target.value)}
-                required
-                value={draft[field]}
-              />
-            </span>
-          </label>
-        ))}
-        {error && (
-          <p className="form-message form-error" role="alert">
-            {error}
-          </p>
-        )}
-        {success && (
-          <p className="inline-confirmation" role="status">
-            <CheckCircle2 size={16} />
-            {success}
-          </p>
-        )}
-        <button className="button button-primary review-submit" disabled={saving} type="submit">
-          {saving ? <span aria-hidden="true" className="button-spinner" /> : <Save size={16} />}
-          {saving ? "Saving review…" : reviewId ? "Update review" : "Save weekly review"}
-        </button>
-      </form>
-      <section className="review-history">
-        <div className="list-heading">
-          <h2>Review history</h2>
-          <button className="text-button" onClick={historyState.retry} type="button">
-            Refresh history
-          </button>
-        </div>
-        {historyState.loading ? (
-          <DataLoading label="Loading review history" />
-        ) : historyState.error ? (
-          <DataError message={historyState.error} retry={historyState.retry} />
-        ) : (historyState.data ?? []).length === 0 ? (
-          <p className="empty-history">Your saved reviews will appear here.</p>
-        ) : (
-          <ul className="review-history-list">
-            {historyState.data?.map((review) => (
-              <li key={review.id}>
-                <span>
-                  <strong>Week of {review.week_start}</strong>
-                  <small>Updated {new Date(review.updated_at_utc).toLocaleString()}</small>
-                </span>
-                <button
-                  className="button button-secondary"
-                  onClick={() => editReview(review)}
-                  type="button"
-                >
-                  <Pencil size={14} /> Edit
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <div className="gentle-note">
-        <Heart size={18} />
-        <p>Your pace is allowed to change. A missed day is information, not a failure.</p>
-      </div>
-    </div>
-  );
-}
-
-type DeadlineDraft = DeadlineFields & { status: "pending" | "completed" };
-
-const emptyDeadlineDraft: DeadlineDraft = {
-  title: "",
-  description: "",
-  due_date: "",
-  due_time: null,
-  category: "Personal",
-  url: null,
-  status: "pending",
-};
-
-function deadlineDraft(deadline: Deadline): DeadlineDraft {
-  return {
-    title: deadline.title,
-    description: deadline.description,
-    due_date: deadline.due_date,
-    due_time: deadline.due_time?.slice(0, 5) ?? null,
-    category: deadline.category,
-    url: deadline.url,
-    status: deadline.status,
-  };
-}
-
-function DeadlinesView() {
-  const { data, error, loading, retry } = useApiData(fetchDeadlines);
-  const [draft, setDraft] = useState<DeadlineDraft>(emptyDeadlineDraft);
-  const [editingId, setEditingId] = useState<string>();
-  const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>();
-  const [success, setSuccess] = useState<string>();
-
-  if (loading) return <DataLoading label="Loading deadlines" />;
-  if (error) return <DataError message={error} retry={retry} />;
-  const deadlines = data ?? [];
-  const upcoming = deadlines.filter((deadline) => deadline.classification === "upcoming");
-  const overdue = deadlines.filter((deadline) => deadline.classification === "overdue");
-  const completed = deadlines.filter((deadline) => deadline.classification === "completed");
-
-  function resetForm() {
-    setEditingId(undefined);
-    setDraft(emptyDeadlineDraft);
-    setErrorMessage(undefined);
-    setSuccess(undefined);
-  }
-
-  async function saveDeadline(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (saving) return;
-    setSaving(true);
-    setErrorMessage(undefined);
-    setSuccess(undefined);
-    const values = {
-      ...draft,
-      due_time: draft.due_time || null,
-      url: draft.url || null,
-    };
-    try {
-      if (editingId) {
-        await updateDeadline(editingId, values);
-        setSuccess("Deadline updated.");
-      } else {
-        await createDeadline(values);
-        setSuccess("Deadline saved.");
-      }
-      resetForm();
-      setSuccess(editingId ? "Deadline updated." : "Deadline saved.");
-      retry();
-    } catch (reason) {
-      setErrorMessage(reason instanceof Error ? reason.message : "Could not save this deadline.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function markComplete(deadline: Deadline) {
-    setErrorMessage(undefined);
-    try {
-      await completeDeadline(deadline.id);
-      setSuccess(`${deadline.title} marked complete.`);
-      retry();
-    } catch (reason) {
-      setErrorMessage(
-        reason instanceof Error ? reason.message : "Could not complete this deadline.",
-      );
-    }
-  }
-
-  async function removeDeadline(deadline: Deadline) {
-    if (!window.confirm(`Delete "${deadline.title}"? This cannot be undone.`)) return;
-    setErrorMessage(undefined);
-    try {
-      await deleteDeadline(deadline.id);
-      setSuccess("Deadline deleted.");
-      if (editingId === deadline.id) resetForm();
-      retry();
-    } catch (reason) {
-      setErrorMessage(reason instanceof Error ? reason.message : "Could not delete this deadline.");
-    }
-  }
-
-  function renderGroup(title: string, items: Deadline[], classification: string) {
-    return (
-      <section className="deadline-group" key={title}>
-        <div className="list-heading">
-          <h2>{title}</h2>
-          <span>{items.length}</span>
-        </div>
-        {items.length === 0 ? (
-          <p className="empty-history">No {title.toLowerCase()} deadlines.</p>
-        ) : (
-          items.map((deadline) => (
-            <article className="deadline-row persistent-deadline-row" key={deadline.id}>
-              <div className={`deadline-date ${classification === "upcoming" ? "blue-date" : ""}`}>
-                <CalendarDays size={17} />
-              </div>
-              <div className="deadline-copy">
-                <span
-                  className={`deadline-type ${classification === "overdue" ? "personal" : "estimate"}`}
-                >
-                  {deadline.category} · {classification.toUpperCase()}
-                </span>
-                <h3>{deadline.title}</h3>
-                <p>
-                  {deadline.due_date}
-                  {deadline.due_time ? ` · ${deadline.due_time.slice(0, 5)}` : ""}
-                </p>
-                {deadline.description && <p>{deadline.description}</p>}
-                {deadline.url && (
-                  <a href={deadline.url} rel="noreferrer" target="_blank">
-                    Open link <ExternalLink size={13} />
-                  </a>
-                )}
-              </div>
-              <div className="deadline-actions">
-                {deadline.status === "pending" && (
-                  <button
-                    aria-label={`Mark ${deadline.title} complete`}
-                    className="icon-button"
-                    onClick={() => void markComplete(deadline)}
-                    type="button"
-                  >
-                    <CheckCircle2 size={17} />
-                  </button>
-                )}
-                <button
-                  aria-label={`Edit ${deadline.title}`}
-                  className="icon-button"
-                  onClick={() => {
-                    setDraft(deadlineDraft(deadline));
-                    setEditingId(deadline.id);
-                    setErrorMessage(undefined);
-                    setSuccess(undefined);
-                  }}
-                  type="button"
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  aria-label={`Delete ${deadline.title}`}
-                  className="icon-button danger"
-                  onClick={() => void removeDeadline(deadline)}
-                  type="button"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </article>
-          ))
-        )}
-      </section>
-    );
-  }
-
-  return (
-    <div className="page-stack">
-      <div className="deadline-banner">
-        <CalendarDays size={21} />
-        <div>
-          <strong>Your personal deadlines</strong>
-          <p>
-            Due dates use your configured local timezone. Official program dates are not confirmed
-            here.
-          </p>
-        </div>
-      </div>
-      <form className="review-form deadline-form" onSubmit={(event) => void saveDeadline(event)}>
-        <h2>{editingId ? "Edit deadline" : "Add a deadline"}</h2>
-        <div className="deadline-form-grid">
-          <label>
-            Title
-            <input
-              maxLength={200}
-              onChange={(event) => setDraft({ ...draft, title: event.target.value })}
-              required
-              value={draft.title}
-            />
-          </label>
-          <label>
-            Category
-            <input
-              maxLength={80}
-              onChange={(event) => setDraft({ ...draft, category: event.target.value })}
-              required
-              value={draft.category}
-            />
-          </label>
-          <label>
-            Due date
-            <input
-              onChange={(event) => setDraft({ ...draft, due_date: event.target.value })}
-              required
-              type="date"
-              value={draft.due_date}
-            />
-          </label>
-          <label>
-            Due time (optional)
-            <input
-              onChange={(event) => setDraft({ ...draft, due_time: event.target.value || null })}
-              type="time"
-              value={draft.due_time ?? ""}
-            />
-          </label>
-        </div>
-        <label>
-          Description
-          <textarea
-            maxLength={5000}
-            onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-            value={draft.description}
-          />
-        </label>
-        <label>
-          Link (optional)
-          <input
-            onChange={(event) => setDraft({ ...draft, url: event.target.value || null })}
-            placeholder="https://…"
-            type="url"
-            value={draft.url ?? ""}
-          />
-        </label>
-        {errorMessage && (
-          <p className="form-message form-error" role="alert">
-            {errorMessage}
-          </p>
-        )}
-        {success && (
-          <p className="inline-confirmation" role="status">
-            <CheckCircle2 size={16} />
-            {success}
-          </p>
-        )}
-        <div className="form-actions">
-          <button className="button button-primary review-submit" disabled={saving} type="submit">
-            {saving ? <span aria-hidden="true" className="button-spinner" /> : <Save size={16} />}
-            {saving ? "Saving…" : editingId ? "Update deadline" : "Save deadline"}
-          </button>
-          {editingId && (
-            <button className="button button-secondary" onClick={resetForm} type="button">
-              Cancel edit
-            </button>
-          )}
-        </div>
-      </form>
-      {renderGroup("Upcoming", upcoming, "upcoming")}
-      {renderGroup("Overdue", overdue, "overdue")}
-      {renderGroup("Completed", completed, "completed")}
-      <section className="official-date-card">
-        <div className="official-date-icon">
-          <CircleHelp size={20} />
-        </div>
-        <div>
-          <span className="eyebrow">OFFICIAL PROGRAM DATES</span>
-          <h3>Not confirmed in Questo</h3>
-          <p>
-            Check official announcements for current dates. Personal targets are never presented as
-            official deadlines.
-          </p>
-          <a href="https://summerofcode.withgoogle.com/" target="_blank" rel="noreferrer">
-            Visit Google Summer of Code <ExternalLink size={14} />
-          </a>
-        </div>
-        <span className="verification-badge">UNVERIFIED</span>
-      </section>
-    </div>
-  );
-}
-
 function SettingsView() {
+  const { user, signOut, isLoading: authLoading } = useAuth();
   const settingsState = useApiData(fetchSettings);
   const [draftOverride, setDraftOverride] = useState<SettingsUpdate>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState<string>();
+  const [syncingGuest, setSyncingGuest] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string>();
+  const [exporting, setExporting] = useState(false);
+
+  async function handleClaimGuest() {
+    setSyncingGuest(true);
+    setSyncNotice(undefined);
+    try {
+      const res = await claimGuestData();
+      setSyncNotice(res.message);
+      settingsState.retry();
+    } catch (e) {
+      setSyncNotice(e instanceof Error ? e.message : "Sync failed.");
+    } finally {
+      setSyncingGuest(false);
+    }
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const data = await exportAccountData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `questo-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Failed to export data: " + (e instanceof Error ? e.message : "Unknown error"));
+    } finally {
+      setExporting(false);
+    }
+  }
   const draft =
     draftOverride ??
     (settingsState.data
@@ -1179,7 +606,7 @@ function SettingsView() {
         <div className="settings-group-heading">
           <Bell size={18} />
           <div>
-            <h2>Reminders & encouragement</h2>
+            <h2>Reminders &amp; encouragement</h2>
             <p>Stay in the loop without the pressure.</p>
           </div>
         </div>
@@ -1214,6 +641,110 @@ function SettingsView() {
           />
         </label>
       </section>
+      <section className="settings-group">
+        <div className="settings-group-heading">
+          <UserCircle2 size={18} />
+          <div>
+            <h2>Account</h2>
+            <p>Your identity and cloud sync status.</p>
+          </div>
+        </div>
+        {authLoading ? (
+          <div style={{ padding: "0.5rem 0", color: "var(--text-muted, #94a3b8)", fontSize: "0.875rem" }}>Loading account…</div>
+        ) : user ? (
+          <>
+            <div className="setting-row" style={{ alignItems: "flex-start" }}>
+              <span>
+                <strong>Signed-in account</strong>
+                <small>{user.email}</small>
+              </span>
+              <span className="setting-value" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", color: "#10b981", fontWeight: 600 }}>
+                <ShieldCheck size={14} />
+                {user.email_confirmed_at ? "Verified" : "Unverified"}
+              </span>
+            </div>
+            <div className="setting-row">
+              <span>
+                <strong>Cloud sync</strong>
+                <small>Your progress, quests, and settings save to the cloud.</small>
+              </span>
+              <span className="setting-value" style={{ color: "#10b981", fontWeight: 600 }}>Active</span>
+            </div>
+            <div className="setting-row">
+              <span>
+                <strong>Backup &amp; Export</strong>
+                <small>Download a full copy of your quests, XP, reviews, and deadlines.</small>
+              </span>
+              <button
+                className="button button-outline"
+                disabled={exporting}
+                onClick={() => void handleExport()}
+                style={{ fontSize: "0.8125rem", padding: "0.3rem 0.75rem", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                type="button"
+              >
+                <Download size={14} /> {exporting ? "Exporting…" : "Export JSON"}
+              </button>
+            </div>
+            <div className="setting-row">
+              <span>
+                <strong>Sync local guest progress</strong>
+                <small>Transfer any milestones or deadlines completed as guest into this account.</small>
+              </span>
+              <button
+                className="button button-outline"
+                disabled={syncingGuest}
+                onClick={() => void handleClaimGuest()}
+                style={{ fontSize: "0.8125rem", padding: "0.3rem 0.75rem", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                type="button"
+              >
+                <RefreshCw size={14} className={syncingGuest ? "spin" : ""} /> {syncingGuest ? "Syncing…" : "Transfer guest data"}
+              </button>
+            </div>
+            {syncNotice && (
+              <div style={{ padding: "0.5rem 0.75rem", background: "#f0fdf4", color: "#166534", borderRadius: "8px", fontSize: "0.8125rem" }}>
+                {syncNotice}
+              </div>
+            )}
+            <div className="setting-row">
+              <span>
+                <strong>Sign out</strong>
+                <small>You will return to guest mode. Local data is preserved.</small>
+              </span>
+              <button
+                className="button button-outline"
+                onClick={() => void signOut()}
+                style={{ fontSize: "0.8125rem", padding: "0.3rem 0.75rem", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                type="button"
+              >
+                <LogOut size={14} /> Log out
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="setting-row">
+              <span>
+                <strong>Not signed in</strong>
+                <small>Sign in to save and sync your progress across all devices.</small>
+              </span>
+              <span className="setting-value">Guest mode</span>
+            </div>
+            <div className="setting-row">
+              <span>
+                <strong>Create account or sign in</strong>
+                <small>Free. No spam. Cloud-backed data forever.</small>
+              </span>
+              <a
+                className="button button-primary"
+                href="/login"
+                style={{ fontSize: "0.8125rem", padding: "0.3rem 0.75rem", display: "inline-flex", alignItems: "center", gap: "0.4rem", textDecoration: "none" }}
+              >
+                <LogIn size={14} /> Sign in
+              </a>
+            </div>
+          </>
+        )}
+      </section>
       <section className="settings-group profile-settings">
         <div className="settings-group-heading">
           <Target size={18} />
@@ -1247,7 +778,7 @@ function SettingsView() {
       )}
       <div className="form-actions settings-form-actions">
         <button className="button button-primary" disabled={saving} type="submit">
-          {saving ? <span aria-hidden="true" className="button-spinner" /> : <Save size={16} />}
+          {saving ? <span className="button-spinner" /> : <Save size={16} />}
           {saving ? "Saving…" : error ? "Retry save" : "Save settings"}
         </button>
         {settingsState.data?.updated_at_utc && (
@@ -1277,7 +808,7 @@ export function FeaturePage({ page }: { page: FeaturePageKey }) {
         <h1>{details.title}</h1>
         <p>{details.subtitle}</p>
       </div>
-      {page === "quests" && <QuestList />}
+      {page === "quests" && <QuestsView />}
       {page === "roadmap" && <RoadmapView />}
       {page === "progress" && <ProgressView />}
       {page === "weekly-review" && <WeeklyReviewView />}

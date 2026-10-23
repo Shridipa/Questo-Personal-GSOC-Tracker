@@ -9,6 +9,8 @@ import {
   CalendarDays,
   Flag,
   House,
+  LogIn,
+  LogOut,
   MoreHorizontal,
   Settings,
   Target,
@@ -17,6 +19,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
   href: string;
@@ -86,6 +89,7 @@ function NavigationLinks({
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { user, signOut, isConfigured } = useAuth();
   const [openMenuPath, setOpenMenuPath] = useState<string>();
   const moreOpen = openMenuPath === pathname;
   const isOnline = useSyncExternalStore(subscribeToNetworkStatus, getNetworkStatus, () => true);
@@ -136,6 +140,23 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [installPrompt]);
 
+  // Auth routes render standalone — outside the dashboard shell
+  const AUTH_ROUTES = [
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
+    "/verify-email",
+    "/auth/callback",
+  ];
+  const isAuthRoute = AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route + "/"),
+  );
+
+  if (isAuthRoute) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">
@@ -151,12 +172,52 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="profile-card">
           <div aria-hidden="true" className="avatar">
-            Q
+            {user?.email ? user.email.slice(0, 1).toUpperCase() : "Q"}
           </div>
           <div className="profile-copy">
-            <strong>Your learning journey</strong>
-            <span>Future open-source builder</span>
+            <strong>{user?.user_metadata?.full_name || (user?.email ? user.email.split("@")[0] : "Your learning journey")}</strong>
+            <span>{user?.email ? "Cloud Synced" : "Local mode · Sign in to sync"}</span>
           </div>
+        </div>
+
+        <div style={{ padding: "0 1.25rem 0.75rem" }}>
+          {user ? (
+            <button
+              className="button button-outline"
+              onClick={() => void signOut()}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.4rem",
+                width: "100%",
+                fontSize: "0.8125rem",
+                padding: "0.4rem 0.65rem",
+              }}
+              type="button"
+            >
+              <LogOut size={14} />
+              <span>Log out</span>
+            </button>
+          ) : (
+            <Link
+              className="button button-primary"
+              href="/login"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.4rem",
+                width: "100%",
+                fontSize: "0.8125rem",
+                padding: "0.45rem 0.65rem",
+                textDecoration: "none",
+              }}
+            >
+              <LogIn size={14} />
+              <span>Sign in / Sync</span>
+            </Link>
+          )}
         </div>
 
         <nav aria-label="Learning" className="nav-section">
@@ -202,21 +263,81 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
             <span className="brand-word">Questo</span>
           </Link>
-          {installPrompt && (
-            <button className="install-app-button" onClick={installApp} type="button">
-              Install app
-            </button>
-          )}
-          <span className="mobile-preview-tag">Questo</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {user ? (
+              <Link
+                href="/settings"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  color: "var(--foreground, inherit)",
+                  textDecoration: "none",
+                  padding: "0.3rem 0.6rem",
+                  borderRadius: "999px",
+                  background: "var(--surface-sunken, rgba(0,0,0,0.04))",
+                  border: "1px solid var(--border-soft, #e2e8f0)",
+                }}
+              >
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    backgroundColor: "#10b981",
+                  }}
+                />
+                <span>{user.email?.split("@")[0]}</span>
+              </Link>
+            ) : (
+              <Link
+                className="button button-outline"
+                href="/login"
+                style={{
+                  fontSize: "0.75rem",
+                  padding: "0.25rem 0.6rem",
+                  textDecoration: "none",
+                }}
+              >
+                Sign in
+              </Link>
+            )}
+            {installPrompt && (
+              <button className="install-app-button" onClick={installApp} type="button">
+                Install
+              </button>
+            )}
+          </div>
         </header>
 
         <header className="status-bar">
           <div className="status-level">
             <span className="status-preview-note">
-              Saved quest completion, XP, and streak data are available on your path.
+              {user
+                ? `Signed in as ${user.email} · Cloud persistence active`
+                : "Guest mode · Sign in to save and sync progress across devices"}
             </span>
           </div>
           <div className="status-right">
+            {!user && (
+              <Link
+                className="button button-outline"
+                href="/login"
+                style={{
+                  fontSize: "0.8125rem",
+                  padding: "0.3rem 0.65rem",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                }}
+              >
+                <LogIn size={14} />
+                <span>Sign in</span>
+              </Link>
+            )}
             {installPrompt && (
               <button className="install-app-button" onClick={installApp} type="button">
                 Install Questo

@@ -1,0 +1,1525 @@
+/* ==========================================================================
+   Questo premium UI — design system for Quests, Deadlines, and Weekly Review
+   Readable-first: body text ≥16px, metadata ≥14px, comfortable line-height.
+   ========================================================================== */
+
+:root {
+  --qo-forest: #166534;
+  --qo-leaf: #16a34a;
+  --qo-leaf-hover: #15803d;
+  --qo-sage: #f0fdf4;
+  --qo-sage-strong: #dcfce7;
+  --qo-mint: #e7f7ec;
+  --qo-amber-bg: #fef6e0;
+  --qo-amber-ink: #92600a;
+  --qo-coral-bg: #fdeee9;
+  --qo-coral-ink: #b13c1f;
+  --qo-blue-bg: #e9f2fd;
+  --qo-blue-ink: #1d5fa8;
+  --qo-lavender-bg: #efeaff;
+  --qo-lavender-ink: #5b4bb5;
+  --qo-card-border: #e2e8dd;
+  --qo-card-shadow: 0 10px 30px rgba(38, 55, 75, 0.07);
+  --qo-card-shadow-lift: 0 16px 40px rgba(38, 55, 75, 0.12);
+  --qo-radius: 18px;
+  --qo-radius-sm: 12px;
+  --qo-transition: 180ms ease;
+}
+
+.qo-page {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.qo-page h2,
+.qo-page h3 {
+  color: var(--ink);
+}
+
+.qo-muted {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   ----------------------------------------------------------------------- */
+
+.qo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.55rem 1.15rem;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition:
+    background var(--qo-transition),
+    border-color var(--qo-transition),
+    box-shadow var(--qo-transition),
+    transform var(--qo-transition);
+}
+
+.qo-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.qo-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.qo-btn-primary {
+  background: var(--qo-leaf);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.28);
+}
+
+.qo-btn-primary:hover:not(:disabled) {
+  background: var(--qo-leaf-hover);
+}
+
+.qo-btn-secondary {
+  background: var(--paper);
+  color: var(--qo-forest);
+  border-color: var(--qo-sage-strong);
+}
+
+.qo-btn-secondary:hover:not(:disabled) {
+  border-color: var(--qo-leaf);
+  background: var(--qo-sage);
+}
+
+.qo-btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.qo-btn-ghost:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+
+.qo-btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.25);
+}
+
+.qo-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.qo-btn-lg {
+  min-height: 50px;
+  padding: 0.7rem 1.5rem;
+  font-size: 17px;
+  border-radius: 16px;
+}
+
+.qo-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color var(--qo-transition),
+    background var(--qo-transition),
+    color var(--qo-transition);
+}
+
+.qo-icon-btn:hover:not(:disabled) {
+  border-color: var(--qo-leaf);
+  background: var(--qo-sage);
+}
+
+.qo-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.qo-icon-btn-success {
+  color: var(--qo-forest);
+  border-color: var(--qo-sage-strong);
+}
+
+.qo-icon-btn-danger {
+  color: var(--qo-coral-ink);
+  border-color: var(--qo-coral-bg);
+}
+
+.qo-icon-btn-danger:hover:not(:disabled) {
+  border-color: #dc2626;
+  background: var(--qo-coral-bg);
+}
+
+/* --------------------------------------------------------------------------
+   Hero
+   ----------------------------------------------------------------------- */
+
+.qo-hero {
+  background:
+    radial-gradient(120% 160% at 100% 0%, rgba(88, 199, 118, 0.16) 0%, rgba(88, 199, 118, 0) 55%),
+    linear-gradient(180deg, var(--paper) 0%, var(--qo-sage) 100%);
+  border: 1.5px solid var(--qo-sage-strong);
+  border-radius: 24px;
+  padding: 1.75rem 1.75rem 1.5rem;
+  box-shadow: var(--qo-card-shadow);
+}
+
+.qo-hero-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.1rem;
+}
+
+.qo-hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, var(--qo-leaf) 0%, var(--qo-forest) 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(22, 101, 52, 0.3);
+  flex-shrink: 0;
+}
+
+.qo-hero-copy {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.qo-hero-copy h2 {
+  margin: 0.15rem 0 0.3rem;
+  font-size: clamp(1.7rem, 1.3rem + 1.6vw, 2.35rem);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.qo-hero-copy p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.qo-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qo-hero-all-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--qo-forest);
+  font-size: 17px;
+  font-weight: 600;
+  background: var(--paper);
+  border: 1.5px solid var(--qo-sage-strong);
+  border-radius: 14px;
+  padding: 0.6rem 1rem;
+}
+
+.qo-hero-extra {
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1.5px dashed var(--qo-sage-strong);
+}
+
+.qo-hero-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.qo-hero-progress > .qo-progress {
+  flex: 1 1 320px;
+}
+
+.qo-hero-progress-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.qo-hero-progress-side strong {
+  font-size: 21px;
+  color: var(--ink);
+}
+
+.qo-hero-progress-side strong span {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.qo-hero-progress-side small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 15px;
+  color: var(--qo-amber-ink);
+  font-weight: 600;
+}
+
+.qo-hero-motivation {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--qo-forest);
+}
+
+.qo-hero-empty-note {
+  margin: 0;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   Progress bar
+   ----------------------------------------------------------------------- */
+
+.qo-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.qo-progress-track {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--qo-sage-strong);
+  overflow: hidden;
+}
+
+.qo-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--qo-leaf) 0%, var(--qo-forest) 100%);
+  transition: width 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.qo-progress-caption {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.qo-progress-caption strong {
+  color: var(--qo-forest);
+  font-size: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Metric tiles
+   ----------------------------------------------------------------------- */
+
+.qo-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.qo-metric {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: var(--paper);
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: var(--qo-radius);
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--qo-card-shadow);
+  transition:
+    transform var(--qo-transition),
+    box-shadow var(--qo-transition);
+}
+
+.qo-metric:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--qo-card-shadow-lift);
+}
+
+.qo-metric-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  margin-bottom: 0.35rem;
+  background: var(--qo-sage);
+  color: var(--qo-forest);
+}
+
+.qo-metric-green .qo-metric-icon {
+  background: var(--qo-sage);
+  color: var(--qo-forest);
+}
+
+.qo-metric-blue .qo-metric-icon {
+  background: var(--qo-blue-bg);
+  color: var(--qo-blue-ink);
+}
+
+.qo-metric-amber .qo-metric-icon {
+  background: var(--qo-amber-bg);
+  color: var(--qo-amber-ink);
+}
+
+.qo-metric-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.qo-metric-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.qo-metric-hint {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   Badges & chips
+   ----------------------------------------------------------------------- */
+
+.qo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.qo-badge-green {
+  background: var(--qo-sage-strong);
+  color: var(--qo-forest);
+}
+
+.qo-badge-blue {
+  background: var(--qo-blue-bg);
+  color: var(--qo-blue-ink);
+}
+
+.qo-badge-amber {
+  background: var(--qo-amber-bg);
+  color: var(--qo-amber-ink);
+}
+
+.qo-badge-red {
+  background: var(--qo-coral-bg);
+  color: var(--qo-coral-ink);
+}
+
+.qo-badge-lavender {
+  background: var(--qo-lavender-bg);
+  color: var(--qo-lavender-ink);
+}
+
+.qo-badge-neutral {
+  background: #f1f5f0;
+  color: var(--muted);
+}
+
+.qo-chipset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.qo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.45rem 1rem;
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--qo-transition),
+    background var(--qo-transition),
+    color var(--qo-transition);
+}
+
+.qo-chip:hover {
+  border-color: var(--qo-leaf);
+}
+
+.qo-chip-active {
+  background: var(--qo-forest);
+  border-color: var(--qo-forest);
+  color: #ffffff;
+}
+
+.qo-chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--qo-sage);
+  color: var(--qo-forest);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.qo-chip-active .qo-chip-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Toolbar (filters + search)
+   ----------------------------------------------------------------------- */
+
+.qo-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: var(--paper);
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: var(--qo-radius);
+  padding: 1rem 1.15rem;
+  box-shadow: var(--qo-card-shadow);
+}
+
+.qo-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qo-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 240px;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: 13px;
+  background: var(--cream);
+  color: var(--muted);
+}
+
+.qo-search:focus-within {
+  border-color: var(--qo-leaf);
+  background: var(--paper);
+}
+
+.qo-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+  color: var(--ink);
+  outline: none;
+  padding: 0.55rem 0;
+}
+
+.qo-select-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.qo-select-label select {
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: 13px;
+  background: var(--paper);
+  font-size: 16px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Quest cards
+   ----------------------------------------------------------------------- */
+
+.qo-quest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.15rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.qo-quest-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--paper);
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: var(--qo-radius);
+  padding: 1.3rem 1.3rem 1.15rem;
+  box-shadow: var(--qo-card-shadow);
+  transition:
+    transform var(--qo-transition),
+    box-shadow var(--qo-transition),
+    border-color var(--qo-transition);
+}
+
+.qo-quest-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--qo-card-shadow-lift);
+  border-color: var(--qo-sage-strong);
+}
+
+.qo-quest-card-next {
+  border-color: var(--qo-leaf);
+  background:
+    radial-gradient(140% 120% at 100% 0%, rgba(88, 199, 118, 0.12) 0%, rgba(88, 199, 118, 0) 60%),
+    var(--paper);
+  box-shadow: 0 12px 34px rgba(22, 163, 74, 0.16);
+}
+
+.qo-quest-card-done {
+  background: #fbfdfb;
+}
+
+.qo-quest-card-done h3 {
+  color: var(--muted);
+}
+
+.qo-quest-card-locked {
+  opacity: 0.75;
+}
+
+.qo-quest-flag {
+  position: absolute;
+  top: -0.85rem;
+  left: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.7rem;
+  border-radius: 999px;
+  background: var(--qo-leaf);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+
+.qo-quest-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.qo-quest-card h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.qo-quest-desc {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--muted);
+  flex: 1;
+}
+
+.qo-quest-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin: 0.2rem 0 0;
+  padding: 0.7rem 0 0;
+  border-top: 1.5px dashed var(--line);
+}
+
+.qo-quest-meta div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.qo-quest-meta dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.qo-quest-meta dd {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.qo-quest-action {
+  margin-top: 0.35rem;
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Deadlines
+   ----------------------------------------------------------------------- */
+
+.qo-next-deadline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--paper);
+  border: 1.5px solid var(--qo-sage-strong);
+  border-left: 6px solid var(--qo-leaf);
+  border-radius: var(--qo-radius-sm);
+  padding: 1rem 1.2rem;
+}
+
+.qo-next-deadline-amber {
+  border-left-color: var(--amber);
+  background: var(--qo-amber-bg);
+}
+
+.qo-next-deadline-red {
+  border-left-color: #dc2626;
+  background: var(--qo-coral-bg);
+}
+
+.qo-next-deadline-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--qo-forest);
+  text-transform: none;
+}
+
+.qo-next-deadline h3 {
+  margin: 0.2rem 0 0.15rem;
+  font-size: 21px;
+  line-height: 1.25;
+}
+
+.qo-next-deadline p {
+  margin: 0;
+  font-size: 15.5px;
+  color: var(--muted);
+}
+
+.qo-next-deadline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.qo-deadline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.qo-deadline-card {
+  display: flex;
+  gap: 1.1rem;
+  background: var(--paper);
+  border: 1.5px solid var(--qo-card-border);
+  border-left: 6px solid var(--qo-sage-strong);
+  border-radius: var(--qo-radius);
+  padding: 1.15rem 1.25rem;
+  box-shadow: var(--qo-card-shadow);
+  transition:
+    transform var(--qo-transition),
+    box-shadow var(--qo-transition);
+}
+
+.qo-deadline-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--qo-card-shadow-lift);
+}
+
+.qo-deadline-green {
+  border-left-color: var(--qo-leaf);
+}
+
+.qo-deadline-amber {
+  border-left-color: var(--amber);
+  background: linear-gradient(90deg, var(--qo-amber-bg) 0%, var(--paper) 35%);
+}
+
+.qo-deadline-red {
+  border-left-color: #dc2626;
+  background: linear-gradient(90deg, var(--qo-coral-bg) 0%, var(--paper) 35%);
+}
+
+.qo-deadline-neutral {
+  border-left-color: var(--line);
+  opacity: 0.85;
+}
+
+.qo-deadline-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  padding: 0.55rem 0.6rem;
+  border-radius: var(--qo-radius-sm);
+  background: var(--qo-sage);
+  text-align: center;
+}
+
+.qo-deadline-amber .qo-deadline-date {
+  background: #fdf0d3;
+}
+
+.qo-deadline-red .qo-deadline-date {
+  background: #fadbd2;
+}
+
+.qo-deadline-neutral .qo-deadline-date {
+  background: #f1f5f0;
+}
+
+.qo-deadline-month {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.qo-deadline-date strong {
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.qo-deadline-date small {
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.qo-deadline-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.qo-deadline-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qo-deadline-headline h3 {
+  margin: 0;
+  font-size: 19.5px;
+  line-height: 1.3;
+}
+
+.qo-deadline-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 15.5px;
+  color: var(--muted);
+}
+
+.qo-deadline-category {
+  align-self: flex-start;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--qo-blue-ink);
+  background: var(--qo-blue-bg);
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+}
+
+.qo-deadline-notes {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.qo-deadline-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.qo-ext-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--qo-blue-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0.25rem 0;
+}
+
+/* --------------------------------------------------------------------------
+   Dialogs and forms
+   ----------------------------------------------------------------------- */
+
+.qo-dialog-backdrop {
+  z-index: 60;
+}
+
+.qo-form-dialog,
+.qo-confirm-dialog {
+  width: min(560px, calc(100vw - 2rem));
+  max-height: min(86vh, 900px);
+  overflow-y: auto;
+  background: var(--paper);
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: 22px;
+  padding: 1.6rem 1.6rem 1.4rem;
+  box-shadow: 0 24px 70px rgba(23, 35, 51, 0.28);
+}
+
+.qo-form-dialog h2,
+.qo-confirm-dialog h2 {
+  margin: 0 0 0.2rem;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.qo-form-dialog-sub {
+  margin: 0 0 1.1rem;
+  font-size: 15.5px;
+  color: var(--muted);
+}
+
+.qo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.95rem;
+}
+
+.qo-field > span {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.qo-field input,
+.qo-field textarea,
+.qo-field select {
+  min-height: 46px;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: 13px;
+  background: var(--cream);
+  font-size: 16px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.qo-field textarea {
+  resize: vertical;
+}
+
+.qo-field input:focus,
+.qo-field textarea:focus {
+  border-color: var(--qo-leaf);
+  background: var(--paper);
+}
+
+.qo-field input[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.qo-field-error {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--qo-coral-ink);
+}
+
+.qo-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.qo-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+
+.qo-confirm-dialog p {
+  margin: 0.5rem 0 1.2rem;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.qo-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* --------------------------------------------------------------------------
+   Weekly review panels
+   ----------------------------------------------------------------------- */
+
+.qo-week-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.qo-week-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--qo-sage-strong);
+  border-radius: 12px;
+  padding: 0.5rem 0.9rem;
+  white-space: nowrap;
+}
+
+.qo-panel {
+  background: var(--paper);
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: var(--qo-radius);
+  padding: 1.35rem 1.4rem;
+  box-shadow: var(--qo-card-shadow);
+}
+
+.qo-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.qo-panel-head h2 {
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.qo-panel-head span {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.qo-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.qo-timeline li {
+  position: relative;
+  display: flex;
+  gap: 0.9rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--qo-sage-strong);
+}
+
+.qo-timeline-dot {
+  position: absolute;
+  left: -7px;
+  top: 0.35rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--qo-leaf);
+  border: 2.5px solid var(--qo-sage-strong);
+}
+
+.qo-timeline strong {
+  font-size: 17px;
+  color: var(--ink);
+}
+
+.qo-timeline p {
+  margin: 0.1rem 0 0;
+  font-size: 15.5px;
+  color: var(--muted);
+}
+
+.qo-review-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.qo-review-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1.1rem;
+}
+
+.qo-review-prompt {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.qo-review-prompt > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--qo-sage);
+  color: var(--qo-forest);
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.qo-review-prompt strong {
+  font-size: 18px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.qo-review-field small {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.qo-review-field textarea {
+  min-height: 110px;
+  padding: 0.75rem 0.9rem;
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: 13px;
+  background: var(--cream);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.qo-review-field textarea:focus {
+  border-color: var(--qo-leaf);
+  background: var(--paper);
+}
+
+.qo-insights ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.qo-insights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--qo-sage);
+  border-radius: var(--qo-radius-sm);
+  padding: 0.7rem 0.9rem;
+}
+
+.qo-insights li svg {
+  color: var(--qo-forest);
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.qo-planning-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.qo-planning-grid article {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--cream);
+  border: 1.5px dashed var(--qo-card-border);
+  border-radius: var(--qo-radius-sm);
+  padding: 1rem 1.1rem;
+}
+
+.qo-planning-grid h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 17px;
+  color: var(--qo-forest);
+}
+
+.qo-planning-grid p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+  flex: 1;
+}
+
+.qo-planning-grid .qo-btn {
+  align-self: flex-start;
+}
+
+.qo-mini-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.qo-mini-list li {
+  font-size: 15.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.qo-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.qo-history-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--cream);
+  border: 1.5px solid var(--qo-card-border);
+  border-radius: var(--qo-radius-sm);
+  padding: 0.8rem 1rem;
+}
+
+.qo-history-list strong {
+  display: block;
+  font-size: 16.5px;
+  color: var(--ink);
+}
+
+.qo-history-list small {
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   Feedback states
+   ----------------------------------------------------------------------- */
+
+.qo-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border-radius: var(--qo-radius-sm);
+  padding: 0.8rem 1rem;
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.qo-notice svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.qo-notice-success {
+  background: var(--qo-sage);
+  color: var(--qo-forest);
+  border: 1.5px solid var(--qo-sage-strong);
+}
+
+.qo-notice-error {
+  background: var(--qo-coral-bg);
+  color: var(--qo-coral-ink);
+  border: 1.5px solid #f3c4b6;
+}
+
+.qo-notice-info {
+  background: var(--qo-blue-bg);
+  color: var(--qo-blue-ink);
+  border: 1.5px solid #c9def5;
+}
+
+.qo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  background: var(--paper);
+  border: 2px dashed var(--qo-card-border);
+  border-radius: 20px;
+  padding: 2.4rem 1.6rem;
+}
+
+.qo-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 20px;
+  background: var(--qo-sage);
+  color: var(--qo-forest);
+  margin-bottom: 0.35rem;
+}
+
+.qo-empty h3 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.qo-empty p {
+  margin: 0 0 0.6rem;
+  max-width: 46ch;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.qo-error-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--qo-coral-bg);
+  border: 1.5px solid #f3c4b6;
+  border-radius: var(--qo-radius);
+  padding: 1.4rem 1.5rem;
+}
+
+.qo-error-panel h2 {
+  margin: 0;
+  font-size: 21px;
+  color: var(--qo-coral-ink);
+}
+
+.qo-error-panel p {
+  margin: 0 0 0.5rem;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--qo-coral-ink);
+}
+
+/* --------------------------------------------------------------------------
+   Skeletons
+   ----------------------------------------------------------------------- */
+
+.qo-skeleton-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.qo-skeleton {
+  display: block;
+  border-radius: var(--qo-radius);
+  background: linear-gradient(90deg, #eef3ee 25%, #f7faf7 50%, #eef3ee 75%);
+  background-size: 200% 100%;
+  animation: qo-shimmer 1.4s ease-in-out infinite;
+}
+
+.qo-skeleton-hero {
+  height: 220px;
+  border-radius: 24px;
+}
+
+.qo-skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.qo-skeleton-card {
+  height: 230px;
+}
+
+@keyframes qo-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   ----------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .qo-hero {
+    padding: 1.25rem 1.15rem;
+  }
+
+  .qo-hero-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+  }
+
+  .qo-hero-copy h2 {
+    font-size: 1.65rem;
+  }
+
+  .qo-hero-copy p {
+    font-size: 16px;
+  }
+
+  .qo-hero-actions .qo-btn {
+    width: 100%;
+  }
+
+  .qo-metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .qo-metric-value {
+    font-size: 24px;
+  }
+
+  .qo-deadline-card {
+    flex-wrap: wrap;
+  }
+
+  .qo-deadline-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .qo-field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .qo-quest-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qo-form-dialog,
+  .qo-confirm-dialog {
+    width: calc(100vw - 1.25rem);
+    padding: 1.2rem 1.1rem;
+    border-radius: 18px;
+  }
+
+  .qo-week-label {
+    white-space: normal;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion
+   ----------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .qo-btn,
+  .qo-icon-btn,
+  .qo-chip,
+  .qo-metric,
+  .qo-quest-card,
+  .qo-deadline-card {
+    transition: none;
+  }
+
+  .qo-progress-fill {
+    transition: none;
+  }
+
+  .qo-skeleton {
+    animation: none;
+  }
+}

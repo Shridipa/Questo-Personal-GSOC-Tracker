@@ -1,4 +1,5 @@
 import type { Quest, RoadmapPhase } from "@/lib/quest-data";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 const DEFAULT_API_BASE_URL =
   process.env.NODE_ENV === "production"
@@ -357,23 +358,54 @@ function isActivityHistory(value: unknown): value is ActivityHistory {
   );
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!isSupabaseConfigured) return {};
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+  } catch {
+    // Session retrieval failed; proceed without token
+  }
+  return {};
+}
+
 async function requestJson(
   path: string,
   method = "GET",
   body?: unknown,
   expectJson = true,
+  isRetry = false,
 ): Promise<unknown> {
+  const authHeaders = await getAuthHeaders();
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       cache: "no-store",
       method,
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      headers: {
+        ...authHeaders,
+        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Unknown network error";
     throw new ApiError(`Could not reach the Questo API at ${API_BASE_URL}: ${detail}`);
+  }
+
+  // Handle recoverable 401 with session refresh
+  if (response.status === 401 && !isRetry && isSupabaseConfigured) {
+    try {
+      const { data } = await supabase.auth.refreshSession();
+      if (data.session) {
+        return requestJson(path, method, body, expectJson, true);
+      }
+    } catch {
+      // Refresh failed; proceed to throw standard ApiError
+    }
   }
 
   if (!response.ok) {
@@ -597,6 +629,42 @@ export async function completeDeadline(deadlineId: string): Promise<Deadline> {
 
 export async function deleteDeadline(deadlineId: string): Promise<void> {
   await requestJson(`/api/deadlines/${encodeURIComponent(deadlineId)}`, "DELETE", undefined, false);
+}
+
+export type ClaimResult = {
+  imported_completions: number;
+  imported_work_states: number;
+  imported_reviews: number;
+  imported_deadlines: number;
+  message: string;
+};
+
+function isClaimResult(value: unknown): value is ClaimResult {
+  return (
+    isRecord(value) &&
+    typeof value.imported_completions === "number" &&
+    typeof value.imported_work_states === "number" &&
+    typeof value.imported_reviews === "number" &&
+    typeof value.imported_deadlines === "number" &&
+    typeof value.message === "string"
+  );
+}
+
+export async function claimGuestData(): Promise<ClaimResult> {
+  const payload = await requestJson("/api/account/claim-guest-data", "POST");
+  if (!isClaimResult(payload)) {
+    throw new ApiError("Questo API returned an unexpected claim response.");
+  }
+  return payload;
+}
+
+export async function exportAccountData(): Promise<Record<string, unknown>> {
+  const payload = await requestJson("/api/account/export", "GET");
+  return payload as Record<string, unknown>;
+}
+
+export async function deleteAccountData(): Promise<void> {
+  await requestJson("/api/account", "DELETE", undefined, false);
 }
 
 export async function fetchDashboardData(): Promise<{
