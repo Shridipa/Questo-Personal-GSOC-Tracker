@@ -99,11 +99,13 @@ const PROMPTS: Array<{ field: keyof ReviewFields; title: string; hint: string }>
   },
 ];
 
+const fetchYearActivity = () => fetchActivityHistory(366);
+
 export function WeeklyReviewView() {
   const currentState = useApiData(fetchCurrentWeekReview);
   const historyState = useApiData(fetchWeeklyReviews);
   const streakState = useApiData(fetchStreaks);
-  const activityState = useApiData(() => fetchActivityHistory(366));
+  const activityState = useApiData(fetchYearActivity);
   const deadlinesState = useApiData(fetchDeadlines);
   const questsState = useApiData(fetchQuests);
 
@@ -152,11 +154,22 @@ export function WeeklyReviewView() {
     (questsState.data ?? []).find((quest) => quest.status === "available") ??
     null;
 
-  if (currentState.loading || activityState.loading || !currentWeekStart) {
-    return <LoadingSkeletons label="Loading weekly review" />;
-  }
   if (currentState.error) {
     return <ErrorPanel message={currentState.error} retry={currentState.retry} />;
+  }
+  if (activityState.error && !activityState.data) {
+    return <ErrorPanel message={activityState.error} retry={activityState.retry} />;
+  }
+  if (currentState.loading || activityState.loading) {
+    return <LoadingSkeletons label="Loading weekly review" />;
+  }
+  if (!currentWeekStart) {
+    return (
+      <ErrorPanel
+        message="Could not load the current week range. Please try again."
+        retry={currentState.retry}
+      />
+    );
   }
 
   function selectWeek(startIso: string) {

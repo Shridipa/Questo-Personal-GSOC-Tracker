@@ -50,7 +50,10 @@ export function useApiData<T>(loadData: () => Promise<T>): ApiDataState<T> {
   }, [retry]);
 
   const currentResult =
-    result?.loadData === loadData && result.attempt === attempt ? result : undefined;
+    result?.attempt === attempt &&
+    (result.loadData === loadData || result.data !== undefined || result.error !== undefined)
+      ? result
+      : undefined;
 
   return {
     data: currentResult?.data,
