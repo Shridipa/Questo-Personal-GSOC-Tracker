@@ -250,3 +250,25 @@ class DeadlineResponse(DeadlineFields):
 
 class DeadlineListResponse(BaseModel):
     deadlines: list[DeadlineResponse]
+
+
+class AccountClaimResponse(BaseModel):
+    imported_completions: int
+    imported_work_states: int
+    imported_reviews: int
+    imported_deadlines: int
+    message: str
+
+
+class AccountExportResponse(BaseModel):
+    user_id: str
+    email: str | None
+    exported_at_utc: datetime
+    progress: dict[str, int]
+    completions: list[dict[str, object]]
+    work_states: list[dict[str, object]]
+    xp_ledger: list[dict[str, object]]
+    weekly_reviews: list[dict[str, object]]
+    deadlines: list[dict[str, object]]
+    settings: dict[str, object]
+
