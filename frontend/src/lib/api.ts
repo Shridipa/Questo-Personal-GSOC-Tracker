@@ -1347,10 +1347,14 @@ export async function updateJourneyStatus(
   status: JourneyStatus,
   note?: string,
 ): Promise<JourneyDetail> {
-  const payload = await requestJson(`/api/journeys/${encodeURIComponent(journeyId)}/status`, "PATCH", {
-    status,
-    note: note ?? null,
-  });
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/status`,
+    "PATCH",
+    {
+      status,
+      note: note ?? null,
+    },
+  );
   if (!isRecord(payload) || !isJourneySummary(payload)) {
     throw new ApiError("Questo API returned a journey in an unexpected format.");
   }
@@ -1433,11 +1437,10 @@ export async function attachJourneyIssue(
   issueNumber?: number,
   issueUrl?: string,
 ): Promise<JourneyDetail> {
-  const payload = await requestJson(
-    `/api/journeys/${encodeURIComponent(journeyId)}/issue`,
-    "PUT",
-    { issue_number: issueNumber ?? null, issue_url: issueUrl ?? null },
-  );
+  const payload = await requestJson(`/api/journeys/${encodeURIComponent(journeyId)}/issue`, "PUT", {
+    issue_number: issueNumber ?? null,
+    issue_url: issueUrl ?? null,
+  });
   if (!isRecord(payload) || !isJourneySummary(payload)) {
     throw new ApiError("Questo API returned a journey in an unexpected format.");
   }
@@ -1460,11 +1463,10 @@ export async function linkJourneyPr(
   prNumber?: number,
   prUrl?: string,
 ): Promise<JourneyDetail> {
-  const payload = await requestJson(
-    `/api/journeys/${encodeURIComponent(journeyId)}/pr`,
-    "PUT",
-    { pr_number: prNumber ?? null, pr_url: prUrl ?? null },
-  );
+  const payload = await requestJson(`/api/journeys/${encodeURIComponent(journeyId)}/pr`, "PUT", {
+    pr_number: prNumber ?? null,
+    pr_url: prUrl ?? null,
+  });
   if (!isRecord(payload) || !isJourneySummary(payload)) {
     throw new ApiError("Questo API returned a journey in an unexpected format.");
   }
@@ -1483,10 +1485,7 @@ export async function refreshJourneyPr(journeyId: string): Promise<JourneyDetail
 }
 
 export async function unlinkJourneyPr(journeyId: string): Promise<JourneyDetail> {
-  const payload = await requestJson(
-    `/api/journeys/${encodeURIComponent(journeyId)}/pr`,
-    "DELETE",
-  );
+  const payload = await requestJson(`/api/journeys/${encodeURIComponent(journeyId)}/pr`, "DELETE");
   if (!isRecord(payload) || !isJourneySummary(payload)) {
     throw new ApiError("Questo API returned a journey in an unexpected format.");
   }

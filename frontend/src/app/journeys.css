@@ -12,12 +12,30 @@
   letter-spacing: 0.3px;
   white-space: nowrap;
 }
-.journey-badge-neutral  { background: #f0f1f3; color: #6b7280; }
-.journey-badge-blue     { background: #eff6ff; color: #1d4ed8; }
-.journey-badge-indigo   { background: #eef2ff; color: #4338ca; }
-.journey-badge-purple   { background: #f5f3ff; color: #7c3aed; }
-.journey-badge-amber    { background: #fffbeb; color: #b45309; }
-.journey-badge-green    { background: #f0fdf4; color: #16a34a; }
+.journey-badge-neutral {
+  background: #f0f1f3;
+  color: #6b7280;
+}
+.journey-badge-blue {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.journey-badge-indigo {
+  background: #eef2ff;
+  color: #4338ca;
+}
+.journey-badge-purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+.journey-badge-amber {
+  background: #fffbeb;
+  color: #b45309;
+}
+.journey-badge-green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
 
 /* ─── Journey list ───────────────────────────────────────────────────────── */
 
@@ -42,7 +60,9 @@
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   background: #fff;
-  transition: box-shadow 180ms ease, border-color 180ms ease;
+  transition:
+    box-shadow 180ms ease,
+    border-color 180ms ease;
 }
 
 .journey-card:hover {
@@ -256,7 +276,9 @@
   padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid transparent;
-  transition: background 140ms, border-color 140ms;
+  transition:
+    background 140ms,
+    border-color 140ms;
 }
 
 .journey-checklist-item:hover {
@@ -466,7 +488,9 @@
   color: #9ca3af;
   padding: 0;
   border-radius: 5px;
-  transition: color 130ms, background 130ms;
+  transition:
+    color 130ms,
+    background 130ms;
 }
 
 .journey-icon-btn:hover:not(:disabled) {
@@ -563,7 +587,9 @@
   border-radius: 50%;
   background: #e5e7eb;
   border: 2px solid #e5e7eb;
-  transition: background 200ms, border-color 200ms;
+  transition:
+    background 200ms,
+    border-color 200ms;
   z-index: 1;
 }
 

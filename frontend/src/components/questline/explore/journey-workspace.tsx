@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   ArrowUpRight,
   BookOpen,
-  CheckSquare,
   ChevronDown,
   ChevronUp,
   Circle,
@@ -97,14 +96,14 @@ function Section({
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="journey-section-card">
-      <button
-        className="journey-section-header"
-        onClick={() => setOpen((v) => !v)}
-        type="button"
-      >
+      <button className="journey-section-header" onClick={() => setOpen((v) => !v)} type="button">
         <span className="journey-section-title">{title}</span>
         {badge && <span className="journey-badge journey-badge-neutral">{badge}</span>}
-        {open ? <ChevronUp aria-hidden="true" size={14} /> : <ChevronDown aria-hidden="true" size={14} />}
+        {open ? (
+          <ChevronUp aria-hidden="true" size={14} />
+        ) : (
+          <ChevronDown aria-hidden="true" size={14} />
+        )}
       </button>
       {open && <div className="journey-section-body">{children}</div>}
     </div>
@@ -133,7 +132,12 @@ function ChecklistSection({
     setBusy(item.item_key);
     setError("");
     try {
-      const updated = await updateChecklistItem(journeyId, item.item_key, !item.completed, item.notes);
+      const updated = await updateChecklistItem(
+        journeyId,
+        item.item_key,
+        !item.completed,
+        item.notes,
+      );
       onChange(updated);
     } catch (e) {
       setError(describeApiError(e));
@@ -146,7 +150,12 @@ function ChecklistSection({
     setBusy(item.item_key);
     setError("");
     try {
-      const updated = await updateChecklistItem(journeyId, item.item_key, item.completed, editNotes);
+      const updated = await updateChecklistItem(
+        journeyId,
+        item.item_key,
+        item.completed,
+        editNotes,
+      );
       onChange(updated);
       setEditKey(null);
     } catch (e) {
@@ -262,9 +271,10 @@ function IssueSection({
     setError("");
     try {
       const num = Number(trimmed);
-      const updated = isNaN(num) || !Number.isInteger(num) || num <= 0
-        ? await attachJourneyIssue(journeyId, undefined, trimmed)
-        : await attachJourneyIssue(journeyId, num);
+      const updated =
+        isNaN(num) || !Number.isInteger(num) || num <= 0
+          ? await attachJourneyIssue(journeyId, undefined, trimmed)
+          : await attachJourneyIssue(journeyId, num);
       onChange(updated);
       setMode("view");
       setInput("");
@@ -297,21 +307,29 @@ function IssueSection({
             <span className="journey-github-title">
               {journey.issue_url ? (
                 <a href={journey.issue_url} rel="noreferrer noopener" target="_blank">
-                  #{journey.issue_number}{journey.issue_title ? ` · ${journey.issue_title}` : ""}
+                  #{journey.issue_number}
+                  {journey.issue_title ? ` · ${journey.issue_title}` : ""}
                   <ArrowUpRight aria-hidden="true" size={11} />
                 </a>
               ) : (
-                <>#{journey.issue_number}{journey.issue_title ? ` · ${journey.issue_title}` : ""}</>
+                <>
+                  #{journey.issue_number}
+                  {journey.issue_title ? ` · ${journey.issue_title}` : ""}
+                </>
               )}
             </span>
-            <span className={`journey-badge ${journey.issue_state === "open" ? "journey-badge-green" : "journey-badge-neutral"}`}>
+            <span
+              className={`journey-badge ${journey.issue_state === "open" ? "journey-badge-green" : "journey-badge-neutral"}`}
+            >
               {journey.issue_state ?? "unknown"}
             </span>
           </div>
           {journey.issue_labels.length > 0 && (
             <div className="issue-labels">
               {journey.issue_labels.slice(0, 5).map((l) => (
-                <span className="org-tag" key={l}>{l}</span>
+                <span className="org-tag" key={l}>
+                  {l}
+                </span>
               ))}
             </div>
           )}
@@ -351,7 +369,10 @@ function IssueSection({
           </button>
           <button
             className="button button-outline"
-            onClick={() => { setMode("view"); setError(""); }}
+            onClick={() => {
+              setMode("view");
+              setError("");
+            }}
             type="button"
           >
             Cancel
@@ -360,11 +381,7 @@ function IssueSection({
       ) : (
         <div className="journey-empty-panel">
           <p>No issue linked yet. Pick a GitHub issue to tackle.</p>
-          <button
-            className="button button-outline"
-            onClick={() => setMode("attach")}
-            type="button"
-          >
+          <button className="button button-outline" onClick={() => setMode("attach")} type="button">
             <Plus aria-hidden="true" size={12} />
             Attach issue
           </button>
@@ -398,9 +415,10 @@ function PullRequestSection({
     setError("");
     try {
       const num = Number(trimmed);
-      const updated = isNaN(num) || !Number.isInteger(num) || num <= 0
-        ? await linkJourneyPr(journeyId, undefined, trimmed)
-        : await linkJourneyPr(journeyId, num);
+      const updated =
+        isNaN(num) || !Number.isInteger(num) || num <= 0
+          ? await linkJourneyPr(journeyId, undefined, trimmed)
+          : await linkJourneyPr(journeyId, num);
       onChange(updated);
       setMode("view");
       setInput("");
@@ -456,11 +474,15 @@ function PullRequestSection({
             <span className="journey-github-title">
               {journey.pr_url ? (
                 <a href={journey.pr_url} rel="noreferrer noopener" target="_blank">
-                  #{journey.pr_number}{journey.pr_title ? ` · ${journey.pr_title}` : ""}
+                  #{journey.pr_number}
+                  {journey.pr_title ? ` · ${journey.pr_title}` : ""}
                   <ArrowUpRight aria-hidden="true" size={11} />
                 </a>
               ) : (
-                <>#{journey.pr_number}{journey.pr_title ? ` · ${journey.pr_title}` : ""}</>
+                <>
+                  #{journey.pr_number}
+                  {journey.pr_title ? ` · ${journey.pr_title}` : ""}
+                </>
               )}
             </span>
             {journey.pr_is_draft && (
@@ -513,7 +535,10 @@ function PullRequestSection({
           </button>
           <button
             className="button button-outline"
-            onClick={() => { setMode("view"); setError(""); }}
+            onClick={() => {
+              setMode("view");
+              setError("");
+            }}
             type="button"
           >
             Cancel
@@ -522,11 +547,7 @@ function PullRequestSection({
       ) : (
         <div className="journey-empty-panel">
           <p>No pull request linked yet. Once you submit a PR, link it here.</p>
-          <button
-            className="button button-outline"
-            onClick={() => setMode("link")}
-            type="button"
-          >
+          <button className="button button-outline" onClick={() => setMode("link")} type="button">
             <Plus aria-hidden="true" size={12} />
             Link pull request
           </button>
@@ -607,7 +628,9 @@ function TasksSection({
           {tasks.map((task) => (
             <li className={`journey-task-item${task.completed ? " is-done" : ""}`} key={task.id}>
               <button
-                aria-label={task.completed ? `Mark "${task.title}" incomplete` : `Complete "${task.title}"`}
+                aria-label={
+                  task.completed ? `Mark "${task.title}" incomplete` : `Complete "${task.title}"`
+                }
                 aria-pressed={task.completed}
                 className="journey-check-btn"
                 disabled={busy === task.id}
@@ -648,13 +671,20 @@ function TasksSection({
             type="text"
             value={newTitle}
           />
-          <button className="button button-primary" disabled={busy === "new" || !newTitle.trim()} type="submit">
+          <button
+            className="button button-primary"
+            disabled={busy === "new" || !newTitle.trim()}
+            type="submit"
+          >
             {busy === "new" ? <Loader2 className="button-spinner" size={14} /> : null}
             Add
           </button>
           <button
             className="button button-outline"
-            onClick={() => { setAdding(false); setNewTitle(""); }}
+            onClick={() => {
+              setAdding(false);
+              setNewTitle("");
+            }}
             type="button"
           >
             Cancel
@@ -677,16 +707,40 @@ function TasksSection({
 
 // ─── Journal panel ────────────────────────────────────────────────────────────
 
-const JOURNAL_FIELDS: Array<{ key: keyof Omit<JournalFields, "updated_at_utc">; label: string; placeholder: string }> = [
+const JOURNAL_FIELDS: Array<{
+  key: keyof Omit<JournalFields, "updated_at_utc">;
+  label: string;
+  placeholder: string;
+}> = [
   { key: "summary", label: "Summary", placeholder: "Briefly describe the issue or feature…" },
-  { key: "reproduction_steps", label: "Reproduction steps", placeholder: "Steps to reproduce the bug…" },
-  { key: "expected_vs_actual", label: "Expected vs actual", placeholder: "What should happen vs what does…" },
+  {
+    key: "reproduction_steps",
+    label: "Reproduction steps",
+    placeholder: "Steps to reproduce the bug…",
+  },
+  {
+    key: "expected_vs_actual",
+    label: "Expected vs actual",
+    placeholder: "What should happen vs what does…",
+  },
   { key: "relevant_files", label: "Relevant files", placeholder: "Files / modules involved…" },
-  { key: "potential_causes", label: "Potential causes", placeholder: "Hypotheses about root cause…" },
+  {
+    key: "potential_causes",
+    label: "Potential causes",
+    placeholder: "Hypotheses about root cause…",
+  },
   { key: "proposed_solution", label: "Proposed solution", placeholder: "Your plan / approach…" },
   { key: "tests_to_run", label: "Tests to run", placeholder: "How you plan to verify the fix…" },
-  { key: "questions_for_maintainers", label: "Questions for maintainers", placeholder: "What do you need to clarify?…" },
-  { key: "lessons_learned", label: "Lessons learned", placeholder: "What did you learn from this contribution?…" },
+  {
+    key: "questions_for_maintainers",
+    label: "Questions for maintainers",
+    placeholder: "What do you need to clarify?…",
+  },
+  {
+    key: "lessons_learned",
+    label: "Lessons learned",
+    placeholder: "What did you learn from this contribution?…",
+  },
 ];
 
 function JournalSection({
@@ -757,12 +811,12 @@ function JournalSection({
               Saved {formatTimestamp(journal.updated_at_utc)}
             </span>
           )}
-          <button
-            className="button button-primary"
-            disabled={busy || !dirty}
-            type="submit"
-          >
-            {busy ? <Loader2 className="button-spinner" size={14} /> : <Save aria-hidden="true" size={13} />}
+          <button className="button button-primary" disabled={busy || !dirty} type="submit">
+            {busy ? (
+              <Loader2 className="button-spinner" size={14} />
+            ) : (
+              <Save aria-hidden="true" size={13} />
+            )}
             {saved ? "Saved!" : "Save journal"}
           </button>
         </div>
@@ -806,7 +860,8 @@ function StatusStepper({
       <div className="journey-status-flow">
         {STATUS_FLOW.map((s, i) => {
           const currentIdx = STATUS_FLOW.indexOf(currentStatus);
-          const done = i < currentIdx || (currentIdx !== -1 && s === currentStatus && s === "merged");
+          const done =
+            i < currentIdx || (currentIdx !== -1 && s === currentStatus && s === "merged");
           const active = s === currentStatus;
           return (
             <div
@@ -821,16 +876,18 @@ function StatusStepper({
           );
         })}
       </div>
-      {error && <p className="journey-error" style={{ marginTop: 6 }}>{error}</p>}
+      {error && (
+        <p className="journey-error" style={{ marginTop: 6 }}>
+          {error}
+        </p>
+      )}
       <div className="journey-status-actions">
-        <span className={`journey-badge ${STATUS_CLASSES[currentStatus] ?? "journey-badge-neutral"}`}>
+        <span
+          className={`journey-badge ${STATUS_CLASSES[currentStatus] ?? "journey-badge-neutral"}`}
+        >
           {STATUS_LABELS[currentStatus]}
         </span>
-        <button
-          className="button button-outline"
-          onClick={() => setOpen((v) => !v)}
-          type="button"
-        >
+        <button className="button button-outline" onClick={() => setOpen((v) => !v)} type="button">
           Change status
           <ChevronDown aria-hidden="true" size={12} />
         </button>
@@ -898,7 +955,9 @@ export function JourneyWorkspace({ journeyId }: { journeyId: string }) {
       }
     }
     void load();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [journeyId]);
 
   if (state === "loading") {
@@ -947,51 +1006,25 @@ export function JourneyWorkspace({ journeyId }: { journeyId: string }) {
           {journey.org_slug && (
             <>
               {" · "}
-              <Link href={`/explore/${journey.org_slug}`}>
-                {journey.org_slug}
-              </Link>
+              <Link href={`/explore/${journey.org_slug}`}>{journey.org_slug}</Link>
             </>
           )}
         </p>
       </div>
 
       {/* Status stepper */}
-      <StatusStepper
-        currentStatus={journey.status}
-        journeyId={journey.id}
-        onChange={update}
-      />
+      <StatusStepper currentStatus={journey.status} journeyId={journey.id} onChange={update} />
 
       {/* Workspace grid */}
       <div className="journey-workspace-grid">
         <div className="journey-workspace-main">
-          <ChecklistSection
-            items={journey.checklist}
-            journeyId={journey.id}
-            onChange={update}
-          />
-          <JournalSection
-            journal={journey.journal}
-            journeyId={journey.id}
-            onChange={update}
-          />
+          <ChecklistSection items={journey.checklist} journeyId={journey.id} onChange={update} />
+          <JournalSection journal={journey.journal} journeyId={journey.id} onChange={update} />
         </div>
         <div className="journey-workspace-side">
-          <IssueSection
-            journey={journey}
-            journeyId={journey.id}
-            onChange={update}
-          />
-          <PullRequestSection
-            journey={journey}
-            journeyId={journey.id}
-            onChange={update}
-          />
-          <TasksSection
-            journeyId={journey.id}
-            onChange={update}
-            tasks={journey.tasks}
-          />
+          <IssueSection journey={journey} journeyId={journey.id} onChange={update} />
+          <PullRequestSection journey={journey} journeyId={journey.id} onChange={update} />
+          <TasksSection journeyId={journey.id} onChange={update} tasks={journey.tasks} />
           <EventLog events={journey.events} />
         </div>
       </div>

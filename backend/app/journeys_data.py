@@ -229,7 +229,9 @@ def create_or_get_journey(
     repo_full_name = f"{repo_owner}/{repo_name}"
     existing = get_active_journey_for_repo(user_id, repo_full_name)
     if existing:
-        return existing, False
+        detail = get_journey_detail(existing["id"], user_id)
+        if detail:
+            return detail, False
 
     journey_id = str(uuid4())
     now = datetime.now(UTC).isoformat()

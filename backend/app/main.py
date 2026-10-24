@@ -81,6 +81,7 @@ from .schemas import (
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     initialize_database()
     initialize_explore_tables()
+    initialize_journey_tables()
     yield
 
 
@@ -92,6 +93,7 @@ app = FastAPI(
 )
 
 app.include_router(explore_router)
+app.include_router(journeys_router)
 
 
 @app.exception_handler(ExternalSourceError)

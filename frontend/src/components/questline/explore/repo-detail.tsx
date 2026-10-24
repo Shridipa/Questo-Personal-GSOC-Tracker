@@ -140,7 +140,9 @@ export function RepoDetail({ slug, fullName }: { slug: string; fullName: string 
       }
     }
     void load();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [user, owner, repoName]);
 
   const startOrOpenJourney = async () => {
@@ -160,7 +162,6 @@ export function RepoDetail({ slug, fullName }: { slug: string; fullName: string 
   };
 
   const changeLabel = (next: IssueLabelFilter) => {
-
     setIssuesState("switching");
     setIssuesMessage("");
     setLabel(next);
@@ -345,7 +346,11 @@ export function RepoDetail({ slug, fullName }: { slug: string; fullName: string 
               className={`org-follow-button${activeJourney ? " is-followed" : ""}`}
               disabled={journeyBusy}
               onClick={() => void startOrOpenJourney()}
-              title={activeJourney ? "Open your contribution journey for this repo" : "Start tracking a contribution to this repo"}
+              title={
+                activeJourney
+                  ? "Open your contribution journey for this repo"
+                  : "Start tracking a contribution to this repo"
+              }
               type="button"
             >
               {journeyBusy ? (

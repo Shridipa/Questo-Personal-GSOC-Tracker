@@ -44,13 +44,7 @@ const STATUS_CLASSES: Record<JourneyStatus, string> = {
   abandoned: "journey-badge-neutral",
 };
 
-function ProgressRing({
-  done,
-  total,
-}: {
-  done: number;
-  total: number;
-}) {
+function ProgressRing({ done, total }: { done: number; total: number }) {
   const r = 16;
   const circ = 2 * Math.PI * r;
   const pct = total > 0 ? done / total : 0;
@@ -64,14 +58,7 @@ function ProgressRing({
       viewBox="0 0 40 40"
       width={40}
     >
-      <circle
-        cx="20"
-        cy="20"
-        fill="none"
-        r={r}
-        stroke="var(--surface-3)"
-        strokeWidth="5"
-      />
+      <circle cx="20" cy="20" fill="none" r={r} stroke="var(--surface-3)" strokeWidth="5" />
       <circle
         cx="20"
         cy="20"
@@ -106,21 +93,14 @@ function JourneyCard({ journey }: { journey: JourneySummary }) {
     <li className="journey-card">
       <div className="journey-card-head">
         <div className="journey-card-title-row">
-          <Link
-            className="journey-card-title"
-            href={`/journeys/${journey.id}`}
-          >
+          <Link className="journey-card-title" href={`/journeys/${journey.id}`}>
             {journey.title}
           </Link>
           <span className={`journey-badge ${badgeClass}`}>{label}</span>
         </div>
         <p className="journey-card-repo">
           <MapPin aria-hidden="true" size={11} />
-          <a
-            href={journey.repo_url}
-            rel="noreferrer noopener"
-            target="_blank"
-          >
+          <a href={journey.repo_url} rel="noreferrer noopener" target="_blank">
             {journey.repo_full_name}
           </a>
         </p>
@@ -178,12 +158,14 @@ export function JourneyList() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      setState("ready");
-      return;
-    }
     let ignore = false;
     async function load() {
+      if (!user) {
+        if (!ignore) {
+          setState("ready");
+        }
+        return;
+      }
       try {
         const data = await fetchJourneys();
         if (!ignore) {
@@ -244,12 +226,8 @@ export function JourneyList() {
     );
   }
 
-  const active = journeys.filter(
-    (j) => !["merged", "closed", "abandoned"].includes(j.status),
-  );
-  const archived = journeys.filter((j) =>
-    ["merged", "closed", "abandoned"].includes(j.status),
-  );
+  const active = journeys.filter((j) => !["merged", "closed", "abandoned"].includes(j.status));
+  const archived = journeys.filter((j) => ["merged", "closed", "abandoned"].includes(j.status));
 
   return (
     <div className="feature-page explore-page">

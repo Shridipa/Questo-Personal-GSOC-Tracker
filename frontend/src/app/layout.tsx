@@ -4,8 +4,6 @@ import { AuthProvider } from "@/lib/auth-context";
 import { Suspense, type ReactNode } from "react";
 import "./globals.css";
 
-
-
 export const metadata: Metadata = {
   title: {
     default: "Questo — your open-source learning adventure",
