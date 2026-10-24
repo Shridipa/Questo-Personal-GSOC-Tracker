@@ -1,15 +1,14 @@
 import concurrent.futures
+import sqlite3
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-import sqlite3
+
 import jwt
 import pytest
-from fastapi.testclient import TestClient
-
-from backend.app import database, main
-from backend.app.auth import AuthUser
+from backend.app import database
 from backend.app.main import app
+from fastapi.testclient import TestClient
 
 TEST_SECRET = "test-secret-key-for-unit-testing-only-12345"
 

@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { AppShell } from "@/components/questline/app-shell";
 import { AuthProvider } from "@/lib/auth-context";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import "./globals.css";
+
+
 
 export const metadata: Metadata = {
   title: {
@@ -17,7 +19,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Questo",
   },
-    icons: {
+  icons: {
     icon: "/icons/questo.svg",
     apple: "/icons/questo-phoenix.png",
   },
@@ -37,7 +39,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <Suspense fallback={null}>
+            <AppShell>{children}</AppShell>
+          </Suspense>
         </AuthProvider>
       </body>
     </html>

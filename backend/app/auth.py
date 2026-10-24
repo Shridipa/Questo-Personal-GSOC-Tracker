@@ -22,16 +22,15 @@ Environment variables required (set in Render dashboard or .env):
 
 from __future__ import annotations
 
-import os
-import time
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
 import jwt
-from jwt import PyJWKClient, PyJWKClientError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import PyJWKClient, PyJWKClientError
 
 logger = logging.getLogger(__name__)
 

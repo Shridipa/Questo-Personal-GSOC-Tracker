@@ -7,7 +7,9 @@ import {
   Award,
   BookOpen,
   CalendarDays,
+  Compass,
   Flag,
+  GitBranch,
   House,
   LogIn,
   LogOut,
@@ -30,6 +32,8 @@ type NavItem = {
 const mainNavigation: NavItem[] = [
   { href: "/", label: "My path", icon: House },
   { href: "/quests", label: "Quests", icon: Target },
+  { href: "/explore", label: "Explore orgs", icon: Compass },
+  { href: "/journeys", label: "My journeys", icon: GitBranch },
   { href: "/roadmap", label: "Roadmap", icon: Flag },
   { href: "/progress", label: "Progress", icon: Trophy },
 ];
@@ -70,7 +74,8 @@ function NavigationLinks({
   onNavigate?: () => void;
 }) {
   return items.map(({ href, label, icon: Icon }) => {
-    const active = pathname === href;
+    // Sub-pages stay attached to their section (e.g. /explore/org → "Explore orgs").
+    const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
     return (
       <Link
         aria-current={active ? "page" : undefined}

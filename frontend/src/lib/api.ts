@@ -681,3 +681,821 @@ export async function fetchDashboardData(): Promise<{
   ]);
   return { quests, phases, deadlines, currentReview };
 }
+
+// --- Explore: GSoC organizations, repositories, preferences ---
+// Mirrors backend/app/schemas_explore.py. Participation years are historical
+// records from the GSoC archive; they never confirm future participation.
+
+export type OrgSummary = {
+  slug: string;
+  name: string;
+  description: string;
+  category: string | null;
+  logo_url: string | null;
+  image_background_color: string | null;
+  technologies: string[];
+  topics: string[];
+  participation_years: number[];
+  latest_projects_count: number | null;
+  repo_url: string | null;
+  followed: boolean;
+};
+
+export type OrgDetail = OrgSummary & {
+  website_url: string | null;
+  ideas_url: string | null;
+  guide_url: string | null;
+  blog_url: string | null;
+  twitter_url: string | null;
+  irc_channel: string | null;
+  contact_email: string | null;
+  mailing_list: string | null;
+  source: string | null;
+  synced_at_utc: string | null;
+  github_org_login: string | null;
+};
+
+export type CatalogMeta = {
+  count: number;
+  source: string | null;
+  years: number[];
+  year_note: string;
+  stale: boolean;
+};
+
+export type OrgListResponse = {
+  orgs: OrgSummary[];
+  meta: CatalogMeta;
+};
+
+export type FollowState = {
+  slug: string;
+  followed: boolean;
+  note: string;
+  target_date: string | null;
+};
+
+export type FollowedOrg = {
+  org_slug: string;
+  name: string;
+  note: string;
+  target_date: string | null;
+  created_at_utc: string;
+  logo_url: string | null;
+  category: string | null;
+  participation_years: number[];
+};
+
+export type Preferences = {
+  interests: string[];
+  languages: string[];
+  experience_level: "new" | "some" | "experienced";
+  weekly_hours: number;
+  updated_at_utc: string | null;
+};
+
+export type PreferencesUpdate = Omit<Preferences, "updated_at_utc">;
+
+export type RepoSummary = {
+  full_name: string;
+  name: string;
+  description: string | null;
+  html_url: string | null;
+  language: string | null;
+  topics: string[];
+  stargazers_count: number;
+  forks_count: number;
+  open_issues_count: number;
+  default_branch: string | null;
+  license: string | null;
+  archived: boolean;
+  pushed_at: string | null;
+};
+
+export type RepoListResponse = {
+  github_org: string;
+  repositories: RepoSummary[];
+  synced_at_utc: string;
+  total_fetched: number;
+  complete: boolean;
+  note: string;
+};
+
+export type RepoDetail = RepoSummary & {
+  created_at: string | null;
+  homepage: string | null;
+  language_totals: Record<string, number>;
+  synced_at_utc: string;
+};
+
+export type RepoSelection = {
+  org_slug: string | null;
+  repo_full_name: string;
+  status: "shortlisted" | "selected";
+  created_at_utc: string;
+  updated_at_utc: string | null;
+};
+
+export type IssueSummary = {
+  number: number;
+  title: string;
+  url: string | null;
+  state: string | null;
+  labels: string[];
+  comments: number;
+  assignees: (string | null)[];
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type IssueListResponse = {
+  owner: string;
+  repo: string;
+  issues: IssueSummary[];
+  has_more: boolean;
+  labels_used: string[];
+  synced_at_utc: string;
+  note: string;
+};
+
+export type RecommendationEntry = {
+  slug: string;
+  name: string;
+  score: number;
+  reasons: string[];
+  category: string | null;
+  logo_url: string | null;
+  participation_years: number[];
+};
+
+export type RecommendationResponse = {
+  recommendations: RecommendationEntry[];
+  based_on: Preferences;
+};
+
+export type ExploreOrgQuery = {
+  q?: string;
+  category?: string;
+  technology?: string;
+  topic?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export type IssueLabelFilter = "good-first-issue" | "help-wanted" | "all";
+
+function isStringList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isOrgSummary(value: unknown): value is OrgSummary {
+  return (
+    isRecord(value) &&
+    typeof value.slug === "string" &&
+    typeof value.name === "string" &&
+    typeof value.description === "string" &&
+    (typeof value.category === "string" || value.category === null) &&
+    (typeof value.logo_url === "string" || value.logo_url === null) &&
+    isStringList(value.technologies) &&
+    isStringList(value.topics) &&
+    Array.isArray(value.participation_years) &&
+    value.participation_years.every((year) => typeof year === "number" && Number.isInteger(year)) &&
+    (typeof value.repo_url === "string" || value.repo_url === null) &&
+    typeof value.followed === "boolean"
+  );
+}
+
+function isCatalogMeta(value: unknown): value is CatalogMeta {
+  return (
+    isRecord(value) &&
+    typeof value.count === "number" &&
+    Number.isInteger(value.count) &&
+    (typeof value.source === "string" || value.source === null) &&
+    Array.isArray(value.years) &&
+    value.years.every((year) => typeof year === "number" && Number.isInteger(year)) &&
+    typeof value.year_note === "string" &&
+    typeof value.stale === "boolean"
+  );
+}
+
+export async function fetchOrgs(query: ExploreOrgQuery = {}): Promise<OrgListResponse> {
+  const params = new URLSearchParams();
+  if (query.q) params.set("q", query.q);
+  if (query.category) params.set("category", query.category);
+  if (query.technology) params.set("technology", query.technology);
+  if (query.topic) params.set("topic", query.topic);
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  if (query.offset !== undefined) params.set("offset", String(query.offset));
+  const suffix = params.toString();
+  const payload = await requestJson(`/api/orgs${suffix ? `?${suffix}` : ""}`);
+  if (
+    !isRecord(payload) ||
+    !Array.isArray(payload.orgs) ||
+    !payload.orgs.every(isOrgSummary) ||
+    !isCatalogMeta(payload.meta)
+  ) {
+    throw new ApiError("Questo API returned organizations in an unexpected format.");
+  }
+  return { orgs: payload.orgs, meta: payload.meta };
+}
+
+export async function fetchOrg(slug: string): Promise<OrgDetail> {
+  const payload = await requestJson(`/api/orgs/${encodeURIComponent(slug)}`);
+  if (!isRecord(payload) || !isOrgDetail(payload)) {
+    throw new ApiError("Questo API returned an organization in an unexpected format.");
+  }
+  return payload;
+}
+
+function isOrgDetail(value: unknown): value is OrgDetail {
+  if (!isOrgSummary(value)) return false;
+  const record = value as Record<string, unknown>;
+  const optionalFields: readonly string[] = [
+    "website_url",
+    "ideas_url",
+    "guide_url",
+    "blog_url",
+    "twitter_url",
+    "irc_channel",
+    "contact_email",
+    "mailing_list",
+    "source",
+    "synced_at_utc",
+    "github_org_login",
+  ];
+  return optionalFields.every(
+    (field) => typeof record[field] === "string" || record[field] === null,
+  );
+}
+
+function isFollowState(value: unknown): value is FollowState {
+  return isRecord(value) && typeof value.slug === "string" && typeof value.followed === "boolean";
+}
+
+export async function followOrg(
+  slug: string,
+  note = "",
+  targetDate?: string,
+): Promise<FollowState> {
+  const payload = await requestJson(`/api/orgs/${encodeURIComponent(slug)}/follow`, "POST", {
+    note,
+    target_date: targetDate ?? null,
+  });
+  if (!isFollowState(payload)) {
+    throw new ApiError("Questo API returned an unexpected follow response.");
+  }
+  return payload;
+}
+
+export async function unfollowOrg(slug: string): Promise<FollowState> {
+  const payload = await requestJson(
+    `/api/orgs/${encodeURIComponent(slug)}/follow`,
+    "DELETE",
+    undefined,
+    true,
+  );
+  if (!isFollowState(payload)) {
+    throw new ApiError("Questo API returned an unexpected unfollow response.");
+  }
+  return payload;
+}
+
+function isFollowedOrg(value: unknown): value is FollowedOrg {
+  return (
+    isRecord(value) &&
+    typeof value.org_slug === "string" &&
+    typeof value.name === "string" &&
+    (typeof value.note === "string" || value.note === undefined) &&
+    (typeof value.target_date === "string" || value.target_date === null) &&
+    typeof value.created_at_utc === "string"
+  );
+}
+
+export async function fetchFollows(): Promise<FollowedOrg[]> {
+  const payload = await requestJson("/api/follows");
+  if (
+    !isRecord(payload) ||
+    !Array.isArray(payload.follows) ||
+    !payload.follows.every(isFollowedOrg)
+  ) {
+    throw new ApiError("Questo API returned followed organizations in an unexpected format.");
+  }
+  return payload.follows;
+}
+
+function isPreferences(value: unknown): value is Preferences {
+  return (
+    isRecord(value) &&
+    isStringList(value.interests) &&
+    isStringList(value.languages) &&
+    (value.experience_level === "new" ||
+      value.experience_level === "some" ||
+      value.experience_level === "experienced") &&
+    typeof value.weekly_hours === "number" &&
+    Number.isInteger(value.weekly_hours) &&
+    value.weekly_hours >= 0
+  );
+}
+
+export async function fetchPreferences(): Promise<Preferences> {
+  const payload = await requestJson("/api/profile/preferences");
+  if (!isPreferences(payload)) {
+    throw new ApiError("Questo API returned preferences in an unexpected format.");
+  }
+  return payload;
+}
+
+export async function savePreferences(values: PreferencesUpdate): Promise<Preferences> {
+  const payload = await requestJson("/api/profile/preferences", "PUT", values);
+  if (!isPreferences(payload)) {
+    throw new ApiError("Questo API returned saved preferences in an unexpected format.");
+  }
+  return payload;
+}
+
+function isRecommendationEntry(value: unknown): value is RecommendationEntry {
+  return (
+    isRecord(value) &&
+    typeof value.slug === "string" &&
+    typeof value.name === "string" &&
+    typeof value.score === "number" &&
+    isStringList(value.reasons)
+  );
+}
+
+export async function fetchRecommendations(): Promise<RecommendationResponse> {
+  const payload = await requestJson("/api/recommendations");
+  if (
+    !isRecord(payload) ||
+    !Array.isArray(payload.recommendations) ||
+    !payload.recommendations.every(isRecommendationEntry) ||
+    !isPreferences(payload.based_on)
+  ) {
+    throw new ApiError("Questo API returned recommendations in an unexpected format.");
+  }
+  return payload as RecommendationResponse;
+}
+
+function isRepoSummary(value: unknown): value is RepoSummary {
+  return (
+    isRecord(value) &&
+    typeof value.full_name === "string" &&
+    typeof value.name === "string" &&
+    (typeof value.description === "string" || value.description === null) &&
+    (typeof value.html_url === "string" || value.html_url === null) &&
+    (typeof value.language === "string" || value.language === null) &&
+    isStringList(value.topics) &&
+    typeof value.stargazers_count === "number" &&
+    typeof value.forks_count === "number" &&
+    typeof value.open_issues_count === "number" &&
+    typeof value.archived === "boolean"
+  );
+}
+
+async function requestRepoList(path: string): Promise<RepoListResponse> {
+  const payload = await requestJson(path);
+  if (
+    !isRecord(payload) ||
+    typeof payload.github_org !== "string" ||
+    !Array.isArray(payload.repositories) ||
+    !payload.repositories.every(isRepoSummary)
+  ) {
+    throw new ApiError("Questo API returned repositories in an unexpected format.");
+  }
+  return payload as RepoListResponse;
+}
+
+export async function fetchOrgRepos(slug: string): Promise<RepoListResponse> {
+  return requestRepoList(`/api/orgs/${encodeURIComponent(slug)}/repos`);
+}
+
+export async function fetchOrgReposRefreshed(slug: string): Promise<RepoListResponse> {
+  return requestRepoList(`/api/orgs/${encodeURIComponent(slug)}/repos?refresh=force`);
+}
+
+export async function fetchRepoDetail(owner: string, repo: string): Promise<RepoDetail> {
+  const payload = await requestJson(
+    `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+  );
+  if (!isRecord(payload) || !isRepoDetail(payload)) {
+    throw new ApiError("Questo API returned repository details in an unexpected format.");
+  }
+  return payload;
+}
+
+function isRepoDetail(value: unknown): value is RepoDetail {
+  if (!isRepoSummary(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    (typeof record.created_at === "string" || record.created_at === null) &&
+    (typeof record.homepage === "string" || record.homepage === null) &&
+    isRecord(record.language_totals) &&
+    Object.values(record.language_totals).every(
+      (count) => typeof count === "number" && Number.isInteger(count),
+    ) &&
+    typeof record.synced_at_utc === "string"
+  );
+}
+
+function isIssueSummary(value: unknown): value is IssueSummary {
+  return (
+    isRecord(value) &&
+    typeof value.number === "number" &&
+    Number.isInteger(value.number) &&
+    typeof value.title === "string" &&
+    isStringList(value.labels)
+  );
+}
+
+export async function fetchRepoIssues(
+  owner: string,
+  repo: string,
+  label: IssueLabelFilter = "good-first-issue",
+  page = 1,
+): Promise<IssueListResponse> {
+  const payload = await requestJson(
+    `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}` +
+      `/issues?label=${label}&page=${page}`,
+  );
+  if (
+    !isRecord(payload) ||
+    typeof payload.owner !== "string" ||
+    typeof payload.repo !== "string" ||
+    !Array.isArray(payload.issues) ||
+    !payload.issues.every(isIssueSummary) ||
+    typeof payload.has_more !== "boolean"
+  ) {
+    throw new ApiError("Questo API returned issues in an unexpected format.");
+  }
+  return payload as IssueListResponse;
+}
+
+function isRepoSelection(value: unknown): value is RepoSelection {
+  return (
+    isRecord(value) &&
+    typeof value.repo_full_name === "string" &&
+    (value.status === "shortlisted" || value.status === "selected") &&
+    typeof value.created_at_utc === "string"
+  );
+}
+
+export async function putRepoSelection(
+  owner: string,
+  repo: string,
+  orgSlug: string | null = null,
+  status: RepoSelection["status"] = "shortlisted",
+): Promise<RepoSelection[]> {
+  const payload = await requestJson(
+    `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/selection`,
+    "PUT",
+    { org_slug: orgSlug, status },
+  );
+  if (
+    !isRecord(payload) ||
+    !Array.isArray(payload.selections) ||
+    !payload.selections.every(isRepoSelection)
+  ) {
+    throw new ApiError("Questo API returned repository selections in an unexpected format.");
+  }
+  return payload.selections;
+}
+
+export async function deleteRepoSelection(owner: string, repo: string): Promise<void> {
+  await requestJson(
+    `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/selection`,
+    "DELETE",
+    undefined,
+    true,
+  );
+}
+
+export async function fetchMyRepoSelections(): Promise<RepoSelection[]> {
+  const payload = await requestJson("/api/me/repos");
+  if (
+    !isRecord(payload) ||
+    !Array.isArray(payload.selections) ||
+    !payload.selections.every(isRepoSelection)
+  ) {
+    throw new ApiError("Questo API returned repository selections in an unexpected format.");
+  }
+  return payload.selections;
+}
+
+// ─── Journey / Contribution workspace ────────────────────────────────────────
+
+export type JourneyStatus =
+  | "preparing"
+  | "issue_selected"
+  | "in_progress"
+  | "pr_open"
+  | "changes_requested"
+  | "merged"
+  | "closed"
+  | "paused"
+  | "abandoned";
+
+export type JourneyChecklistItem = {
+  item_key: string;
+  title: string;
+  completed: boolean;
+  notes: string;
+  completed_at_utc: string | null;
+  updated_at_utc: string;
+};
+
+export type JourneyTask = {
+  id: string;
+  journey_id: string;
+  title: string;
+  completed: boolean;
+  sort_order: number;
+  created_at_utc: string;
+  updated_at_utc: string;
+};
+
+export type JourneyEvent = {
+  id: string;
+  event_type: string;
+  description: string;
+  created_at_utc: string;
+};
+
+export type JournalFields = {
+  summary: string;
+  reproduction_steps: string;
+  expected_vs_actual: string;
+  relevant_files: string;
+  potential_causes: string;
+  proposed_solution: string;
+  tests_to_run: string;
+  questions_for_maintainers: string;
+  lessons_learned: string;
+  updated_at_utc: string;
+};
+
+export type JourneySummary = {
+  id: string;
+  user_id: string;
+  repo_owner: string;
+  repo_name: string;
+  repo_full_name: string;
+  repo_url: string;
+  org_slug: string | null;
+  title: string;
+  status: JourneyStatus;
+  issue_number: number | null;
+  issue_title: string | null;
+  issue_url: string | null;
+  issue_state: string | null;
+  issue_labels: string[];
+  pr_number: number | null;
+  pr_title: string | null;
+  pr_url: string | null;
+  pr_state: string | null;
+  pr_is_draft: boolean;
+  checklist_completed_count: number;
+  checklist_total_count: number;
+  tasks_completed_count: number;
+  tasks_total_count: number;
+  created_at_utc: string;
+  updated_at_utc: string;
+};
+
+export type JourneyDetail = JourneySummary & {
+  issue_comments: number;
+  issue_attached_at_utc: string | null;
+  pr_merged_at: string | null;
+  pr_closed_at: string | null;
+  pr_synced_at_utc: string | null;
+  checklist: JourneyChecklistItem[];
+  journal: JournalFields;
+  tasks: JourneyTask[];
+  events: JourneyEvent[];
+};
+
+function isJourneySummary(value: unknown): value is JourneySummary {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.repo_owner === "string" &&
+    typeof value.repo_name === "string" &&
+    typeof value.repo_full_name === "string" &&
+    typeof value.title === "string" &&
+    typeof value.status === "string" &&
+    typeof value.checklist_completed_count === "number" &&
+    typeof value.checklist_total_count === "number"
+  );
+}
+
+export async function fetchJourneys(statusFilter?: string): Promise<JourneySummary[]> {
+  const suffix = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : "";
+  const payload = await requestJson(`/api/journeys${suffix}`);
+  if (
+    !isRecord(payload) ||
+    !Array.isArray(payload.journeys) ||
+    !payload.journeys.every(isJourneySummary)
+  ) {
+    throw new ApiError("Questo API returned journeys in an unexpected format.");
+  }
+  return payload.journeys;
+}
+
+export async function fetchJourney(journeyId: string): Promise<JourneyDetail> {
+  const payload = await requestJson(`/api/journeys/${encodeURIComponent(journeyId)}`);
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function startJourney(
+  repoOwner: string,
+  repoName: string,
+  orgSlug: string | null = null,
+  title?: string,
+): Promise<JourneyDetail> {
+  const payload = await requestJson("/api/journeys", "POST", {
+    repo_owner: repoOwner,
+    repo_name: repoName,
+    org_slug: orgSlug,
+    title: title ?? null,
+  });
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function getActiveJourneyForRepo(
+  owner: string,
+  repo: string,
+): Promise<JourneySummary | null> {
+  const payload = await requestJson(
+    `/api/journeys/active/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+  );
+  if (!isRecord(payload)) {
+    throw new ApiError("Questo API returned an unexpected journey lookup response.");
+  }
+  const j = payload.journey;
+  if (j === null || j === undefined) return null;
+  if (!isJourneySummary(j)) throw new ApiError("Active journey has unexpected shape.");
+  return j;
+}
+
+export async function updateJourneyStatus(
+  journeyId: string,
+  status: JourneyStatus,
+  note?: string,
+): Promise<JourneyDetail> {
+  const payload = await requestJson(`/api/journeys/${encodeURIComponent(journeyId)}/status`, "PATCH", {
+    status,
+    note: note ?? null,
+  });
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function updateChecklistItem(
+  journeyId: string,
+  itemKey: string,
+  completed: boolean,
+  notes: string,
+): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/checklist/${encodeURIComponent(itemKey)}`,
+    "PUT",
+    { completed, notes },
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function saveJournal(
+  journeyId: string,
+  fields: Omit<JournalFields, "updated_at_utc">,
+): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/journal`,
+    "PUT",
+    fields,
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function addJourneyTask(journeyId: string, title: string): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/tasks`,
+    "POST",
+    { title },
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function updateJourneyTask(
+  journeyId: string,
+  taskId: string,
+  update: { title?: string; completed?: boolean },
+): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/tasks/${encodeURIComponent(taskId)}`,
+    "PATCH",
+    update,
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function deleteJourneyTask(journeyId: string, taskId: string): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/tasks/${encodeURIComponent(taskId)}`,
+    "DELETE",
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function attachJourneyIssue(
+  journeyId: string,
+  issueNumber?: number,
+  issueUrl?: string,
+): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/issue`,
+    "PUT",
+    { issue_number: issueNumber ?? null, issue_url: issueUrl ?? null },
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function detachJourneyIssue(journeyId: string): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/issue`,
+    "DELETE",
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function linkJourneyPr(
+  journeyId: string,
+  prNumber?: number,
+  prUrl?: string,
+): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/pr`,
+    "PUT",
+    { pr_number: prNumber ?? null, pr_url: prUrl ?? null },
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function refreshJourneyPr(journeyId: string): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/pr/refresh`,
+    "POST",
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function unlinkJourneyPr(journeyId: string): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/pr`,
+    "DELETE",
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+/** Normalize a thrown error into a user-facing message without faking success. */
+export function describeApiError(error: unknown): string {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error) return error.message;
+  return "Something went wrong while reaching Questo's API.";
+}

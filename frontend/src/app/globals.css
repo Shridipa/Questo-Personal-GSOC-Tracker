@@ -2,6 +2,8 @@
 @import "tailwindcss";
 @import "./premium.css";
 @import "./landing.css";
+@import "./explore.css";
+@import "./journeys.css";
 
 :root {
   --cream: #fffdf7;

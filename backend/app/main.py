@@ -9,11 +9,11 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Load .env if present (local dev; Render uses dashboard env vars)
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Response
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .auth import AuthUser, get_current_user, get_optional_user
-
 from .database import (
     claim_guest_data,
     complete_deadline,
@@ -42,6 +42,11 @@ from .database import (
     update_deadline,
     update_weekly_review,
 )
+from .explore_router import router as explore_router
+from .http_client import ExternalSourceError
+from .journeys_data import initialize_journey_tables
+from .journeys_router import router as journeys_router
+from .orgs_data import initialize_explore_tables
 from .schemas import (
     AccountClaimResponse,
     AccountExportResponse,
@@ -75,15 +80,27 @@ from .schemas import (
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     initialize_database()
+    initialize_explore_tables()
     yield
 
 
 app = FastAPI(
     title="Questo API",
     description="API for the Questo open-source learning tracker.",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
+
+app.include_router(explore_router)
+
+
+@app.exception_handler(ExternalSourceError)
+def external_source_error_handler(
+    request: Request, exc: ExternalSourceError
+) -> JSONResponse:
+    """Map upstream-data failures to structured API errors with usable messages."""
+    status = exc.status if exc.status >= 400 else 503
+    return JSONResponse(status_code=status, content={"detail": str(exc)})
 
 allowed_origins = [
     origin.strip()
