@@ -419,7 +419,7 @@ def post_deadline_completion(
     return DeadlineResponse.model_validate(completed)
 
 
-@app.delete("/api/deadlines/{deadline_id}", status_code=204, tags=["deadlines"])
+@app.delete("/api/deadlines/{deadline_id}", status_code=204, response_class=Response, tags=["deadlines"])
 def remove_deadline(
     deadline_id: UUID,
     current_user: AuthUser | None = Depends(get_optional_user),
@@ -470,6 +470,7 @@ def export_account_endpoint(
 @app.delete(
     "/api/account",
     status_code=204,
+    response_class=Response,
     tags=["account"],
 )
 def delete_account_endpoint(

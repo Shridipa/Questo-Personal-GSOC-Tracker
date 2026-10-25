@@ -16,7 +16,7 @@ import re
 from datetime import UTC, datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from . import github_service, gsoc_service, orgs_data
 from .auth import AuthUser, get_optional_user
@@ -399,15 +399,16 @@ def get_my_repos(
     )
 
 
-@router.delete("/repos/{owner}/{repo}/selection", status_code=204)
+@router.delete("/repos/{owner}/{repo}/selection", status_code=204, response_class=Response)
 def delete_repo_selection(
     owner: str,
     repo: str,
     current_user: AuthUser | None = Depends(get_optional_user),
-) -> None:
+) -> Response:
     user_id = current_user.id if current_user else None
     if not orgs_data.delete_repo_selection(f"{owner}/{repo}", user_id):
         raise HTTPException(status_code=404, detail="Repository selection not found.")
+    return Response(status_code=204)
 
 
 @router.post("/orgs/sync", response_model=CatalogMeta)
