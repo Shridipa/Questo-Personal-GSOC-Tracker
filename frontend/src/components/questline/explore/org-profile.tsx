@@ -105,9 +105,25 @@ export function OrgProfile({ slug }: { slug: string }) {
 
   useEffect(() => {
     void loadOrg();
-    void loadRepos(false);
     void loadSelections();
-  }, [loadOrg, loadRepos, loadSelections]);
+  }, [loadOrg, loadSelections]);
+
+  useEffect(() => {
+    if (!org) return;
+    if (!org.repo_url) {
+      setRepos({
+        github_org: "",
+        repositories: [],
+        synced_at_utc: org.synced_at_utc || new Date().toISOString(),
+        total_fetched: 0,
+        complete: true,
+        note: "This organization does not have a linked GitHub repository in the official GSoC archive.",
+      });
+      setReposState("ready");
+      return;
+    }
+    void loadRepos(false);
+  }, [org, loadRepos]);
 
   const toggleSelection = async (repoFull: string) => {
     if (!repoFull.includes("/")) return;
@@ -266,26 +282,32 @@ export function OrgProfile({ slug }: { slug: string }) {
       <section className="org-repos-section">
         <div className="list-heading">
           <h2>Repositories</h2>
-          <button
-            className="text-button"
-            disabled={reposRefreshing}
-            onClick={() => void loadRepos(true)}
-            type="button"
-          >
-            {reposRefreshing ? (
-              <Loader2 aria-hidden="true" className="button-spinner" size={14} />
-            ) : null}
-            {reposRefreshing ? "Refreshing…" : "Refresh from GitHub"}
-          </button>
+          {org.repo_url && (
+            <button
+              className="text-button"
+              disabled={reposRefreshing}
+              onClick={() => void loadRepos(true)}
+              type="button"
+            >
+              {reposRefreshing ? (
+                <Loader2 aria-hidden="true" className="button-spinner" size={14} />
+              ) : null}
+              {reposRefreshing ? "Refreshing…" : "Refresh from GitHub"}
+            </button>
+          )}
         </div>
 
         {reposState === "error" ? (
-          <ExploreCatalogError message={reposMessage} onRetry={() => void loadRepos(false)} />
+          reposMessage.toLowerCase().includes("could not derive a github organization") ? (
+            <p className="org-repos-empty">{reposMessage}</p>
+          ) : (
+            <ExploreCatalogError message={reposMessage} onRetry={() => void loadRepos(false)} />
+          )
         ) : reposState === "loading" || !repos ? (
           <div className="org-repos-loading">Fetching repositories…</div>
         ) : repos.repositories.length === 0 ? (
           <p className="org-repos-empty">
-            No public repositories found for this organization on GitHub.
+            {repos.note || "No public repositories found for this organization on GitHub."}
           </p>
         ) : (
           <>

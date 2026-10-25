@@ -246,11 +246,11 @@ def get_org_repos(
         raise HTTPException(status_code=404, detail="Organization not found.")
     login = github_service.extract_github_org_login(org.get("repo_url"))
     if login is None:
+        target_repo_label = org.get("repo_url") or "the organization's recorded repository URL"
         raise HTTPException(
             status_code=422,
             detail=(
-                "Questo could not derive a GitHub organization from "
-                f"\"{org.get('repo_url') or 'the organization’s recorded repository URL'}\". "
+                f'Questo could not derive a GitHub organization from "{target_repo_label}". '
                 "You can still browse repositories by pasting a github.com organization URL "
                 "using the repository search."
             ),

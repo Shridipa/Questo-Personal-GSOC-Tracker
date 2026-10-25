@@ -31,11 +31,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html data-scroll-behavior="smooth" lang="en">
+    <html data-scroll-behavior="smooth" lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <AuthProvider>
           <Suspense fallback={null}>
             <AppShell>{children}</AppShell>
