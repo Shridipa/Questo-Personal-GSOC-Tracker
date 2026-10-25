@@ -263,7 +263,7 @@ def list_orgs(
         ORDER BY org.name COLLATE NOCASE ASC
         LIMIT ? OFFSET ?
     """
-    full_params = [*params, *user_params, limit, offset]
+    full_params = [*user_params, *params, limit, offset]
     with closing(get_connection()) as connection:
         rows = connection.execute(sql, full_params).fetchall()
     return [_row_to_catalog_entry({**row}) for row in rows]
@@ -278,7 +278,7 @@ def get_org(slug: str, user_id: str | None = None) -> dict[str, Any] | None:
             "LEFT JOIN user_org_follows follows "
             f"ON follows.org_slug = org.slug AND {follow_condition} "
             "WHERE org.slug = ?",
-            (slug, *params),
+            (*params, slug),
         ).fetchone()
     if row is None:
         return None

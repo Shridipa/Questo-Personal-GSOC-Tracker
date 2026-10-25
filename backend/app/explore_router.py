@@ -137,10 +137,19 @@ def get_org_detail(
 ) -> OrgDetail:
     _ensure_catalog()
     if not _SLUG_RE.match(slug):
+        logger.warning("get_org_detail 404: slug %r did not match _SLUG_RE", slug)
         raise HTTPException(status_code=404, detail="Organization not found.")
     user_id = current_user.id if current_user else None
     org = orgs_data.get_org(slug, user_id)
     if org is None:
+        stats = orgs_data.catalog_stats()
+        logger.warning(
+            "get_org_detail 404: slug=%r user_id=%s catalog_total=%s catalog_source=%r",
+            slug,
+            bool(user_id),
+            stats.get("count"),
+            stats.get("source"),
+        )
         raise HTTPException(status_code=404, detail="Organization not found.")
     org["github_org_login"] = github_service.extract_github_org_login(org.get("repo_url"))
     return OrgDetail.model_validate(org)

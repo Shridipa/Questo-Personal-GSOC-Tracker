@@ -6,13 +6,40 @@ handling, invalid identifier rejection, and idempotent caching.
 """
 
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NoReturn
 
+import jwt
 import pytest
 from backend.app import database, github_service, gsoc_service, orgs_data
 from backend.app.main import app
 from fastapi.testclient import TestClient
+
+TEST_SECRET = "explore-test-secret-key-at-least-32-chars-long-12345"
+
+
+def make_test_auth_headers(user_id: str = "test-alice-123") -> dict[str, str]:
+    exp = datetime.now(UTC) + timedelta(hours=1)
+    payload = {
+        "sub": user_id,
+        "email": f"{user_id}@example.com",
+        "aud": "authenticated",
+        "exp": int(exp.timestamp()),
+        "role": "authenticated",
+    }
+    token = jwt.encode(payload, TEST_SECRET, algorithm="HS256")
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    monkeypatch.setattr(database, "DATABASE_PATH", tmp_path / "questline-explore.db")
+    monkeypatch.setattr("backend.app.auth._SUPABASE_URL", "https://test.supabase.co")
+    monkeypatch.setattr("backend.app.auth._SUPABASE_JWT_SECRET", TEST_SECRET)
+    monkeypatch.setattr("backend.app.auth._get_jwks_client", lambda: None)
+    with TestClient(app, raise_server_exceptions=False) as test_client:
+        yield test_client
 
 CATALOG_ROWS: list[dict[str, Any]] = [
     {
@@ -58,13 +85,6 @@ CATALOG_ROWS: list[dict[str, Any]] = [
         "latest_projects_count": 5,
     },
 ]
-
-
-@pytest.fixture
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
-    monkeypatch.setattr(database, "DATABASE_PATH", tmp_path / "questline-explore.db")
-    with TestClient(app, raise_server_exceptions=False) as test_client:
-        yield test_client
 
 
 def fake_sync() -> dict[str, Any]:
@@ -446,4 +466,82 @@ def test_org_detail_syncs_catalog_on_cold_start(
     response = client.get("/api/orgs/apertium")
     assert response.status_code == 200
     assert response.json()["slug"] == "apertium"
+
+
+def test_integration_org_list_and_detail_consistency(
+    client: TestClient, synced_catalog: None
+) -> None:
+    auth_headers = make_test_auth_headers("user-reviewer-999")
+
+    # 1. Fetch organization list as guest and as authenticated user
+    res_guest = client.get("/api/orgs?limit=60&offset=0")
+    assert res_guest.status_code == 200
+    orgs_guest = res_guest.json()["orgs"]
+    assert len(orgs_guest) >= 2
+
+    res_auth = client.get("/api/orgs?limit=60&offset=0", headers=auth_headers)
+    assert res_auth.status_code == 200
+    orgs_auth = res_auth.json()["orgs"]
+    assert len(orgs_auth) == len(orgs_guest)
+
+    # 2. For every slug in the list, detail request MUST return 200 for BOTH guest and auth users
+    for org in orgs_auth:
+        slug = org["slug"]
+        # Authenticated detail request
+        detail_auth = client.get(f"/api/orgs/{slug}", headers=auth_headers)
+        assert (
+            detail_auth.status_code == 200
+        ), f"Expected 200 for authenticated detail {slug}, got {detail_auth.status_code}: {detail_auth.text}"
+        data_auth = detail_auth.json()
+        assert data_auth["slug"] == slug
+        assert data_auth["name"] == org["name"]
+
+        # Guest detail request
+        detail_guest = client.get(f"/api/orgs/{slug}")
+        assert (
+            detail_guest.status_code == 200
+        ), f"Expected 200 for guest detail {slug}, got {detail_guest.status_code}: {detail_guest.text}"
+        data_guest = detail_guest.json()
+        assert data_guest["slug"] == slug
+
+        # Repeated request (idempotency & caching check)
+        repeat = client.get(f"/api/orgs/{slug}", headers=auth_headers)
+        assert repeat.status_code == 200
+        assert repeat.json()["slug"] == slug
+
+
+def test_org_detail_cold_start_authenticated_user(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(gsoc_service, "sync_catalog", fake_sync)
+    auth_headers = make_test_auth_headers("user-cold-start-888")
+
+    # Without ever calling /api/orgs first, authenticated user fetches detail directly
+    response = client.get("/api/orgs/asyncapi", headers=auth_headers)
+    assert (
+        response.status_code == 200
+    ), f"Cold-start auth detail failed: {response.status_code} {response.text}"
+    assert response.json()["slug"] == "asyncapi"
+    assert response.json()["name"] == "AsyncAPI"
+
+
+def test_list_orgs_with_filters_authenticated_user(
+    client: TestClient, synced_catalog: None
+) -> None:
+    auth_headers = make_test_auth_headers("user-filter-777")
+
+    # Filtering by technology for authenticated user tests query parameter binding order
+    res_tech = client.get("/api/orgs?technology=python", headers=auth_headers)
+    assert res_tech.status_code == 200
+    slugs = [o["slug"] for o in res_tech.json()["orgs"]]
+    assert "apertium" in slugs
+    assert "asyncapi" not in slugs
+
+    # Filtering by search query
+    res_q = client.get("/api/orgs?q=event-driven", headers=auth_headers)
+    assert res_q.status_code == 200
+    slugs_q = [o["slug"] for o in res_q.json()["orgs"]]
+    assert "asyncapi" in slugs_q
+    assert "apertium" not in slugs_q
+
 
