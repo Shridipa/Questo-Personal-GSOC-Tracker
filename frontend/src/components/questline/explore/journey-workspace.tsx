@@ -33,15 +33,19 @@ import {
   linkJourneyPr,
   refreshJourneyPr,
   saveJournal,
+  syncJourneyPRReviews,
   unlinkJourneyPr,
   updateChecklistItem,
   updateJourneyStatus,
+  updatePRFeedback,
   updateJourneyTask,
   type JournalFields,
   type JourneyChecklistItem,
   type JourneyDetail,
   type JourneyStatus,
   type JourneyTask,
+  type PRFeedback,
+  type PRFeedbackTrackingState,
 } from "@/lib/api";
 import { formatTimestamp } from "@/components/questline/explore/explore-shared";
 
@@ -557,6 +561,343 @@ function PullRequestSection({
   );
 }
 
+// ─── Review intelligence panel ───────────────────────────────────────────────
+
+const REVIEW_STATE_LABELS: Record<string, string> = {
+  APPROVED: "Approved",
+  CHANGES_REQUESTED: "Changes requested",
+  COMMENTED: "Commented",
+  DISMISSED: "Dismissed",
+};
+
+const REVIEW_STATE_CLASSES: Record<string, string> = {
+  APPROVED: "journey-badge-green",
+  CHANGES_REQUESTED: "journey-badge-amber",
+  COMMENTED: "journey-badge-neutral",
+  DISMISSED: "journey-badge-neutral",
+};
+
+const TRACKING_LABELS: Record<PRFeedbackTrackingState, string> = {
+  open: "Open",
+  addressed: "Addressed",
+  not_applicable: "Not applicable",
+};
+
+/** GitHub's own review decision, as last synced — never inferred. */
+function latestReviewSummary(reviews: JourneyDetail["pr_reviews"]): string | null {
+  if (reviews.length === 0) return null;
+  const states = reviews.map((r) => (r.gh_state ?? "").toUpperCase());
+  if (states.includes("CHANGES_REQUESTED")) return "Changes requested";
+  if (states.includes("APPROVED")) return "Approved";
+  if (states.includes("DISMISSED")) return "Review dismissed";
+  return "Reviewed (comments)";
+}
+
+function FeedbackItemCard({
+  journeyId,
+  feedback,
+  onChange,
+}: {
+  journeyId: string;
+  feedback: PRFeedback;
+  onChange: (updated: JourneyDetail) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notes, setNotes] = useState(feedback.response_notes);
+  const [editingNotes, setEditingNotes] = useState(false);
+
+  const patch = async (update: {
+    tracking_state?: PRFeedbackTrackingState;
+    response_notes?: string;
+  }) => {
+    setBusy(true);
+    setError("");
+    try {
+      onChange(await updatePRFeedback(journeyId, feedback.id, update));
+      setEditingNotes(false);
+    } catch (e) {
+      setError(describeApiError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <li className={`journey-feedback-item is-${feedback.tracking_state}`}>
+      <div className="journey-feedback-head">
+        {feedback.source_type === "review" ? (
+          <GitPullRequest aria-hidden="true" size={12} />
+        ) : (
+          <BookOpen aria-hidden="true" size={12} />
+        )}
+        {feedback.html_url ? (
+          <a href={feedback.html_url} rel="noreferrer noopener" target="_blank">
+            {feedback.author ?? "GitHub"}
+            <ArrowUpRight aria-hidden="true" size={10} />
+          </a>
+        ) : (
+          <span>{feedback.author ?? "GitHub"}</span>
+        )}
+        <span className="journey-meta-item">
+          {feedback.source_type === "review" ? "review" : "review comment"}
+        </span>
+        {feedback.submitted_at && (
+          <span className="journey-meta-item">{formatTimestamp(feedback.submitted_at)}</span>
+        )}
+      </div>
+      {feedback.body_excerpt && <p className="journey-feedback-excerpt">{feedback.body_excerpt}</p>}
+      <div className="journey-feedback-tracking">
+        <span className="journey-meta-item">Your tracking:</span>
+        {(Object.keys(TRACKING_LABELS) as PRFeedbackTrackingState[]).map((state) => (
+          <button
+            className={`journey-feedback-state-btn${state === feedback.tracking_state ? " is-active" : ""}`}
+            disabled={busy}
+            key={state}
+            onClick={() => void patch({ tracking_state: state })}
+            type="button"
+          >
+            {TRACKING_LABELS[state]}
+          </button>
+        ))}
+        <span
+          className="journey-meta-item"
+          title="GitHub state — Tracker badges above are your own, and do not mean a reviewer has accepted the changes."
+        >
+          GitHub: {REVIEW_STATE_LABELS[feedback.gh_state] ?? feedback.gh_state}
+        </span>
+      </div>
+      {editingNotes ? (
+        <div className="journey-feedback-notes-edit">
+          <textarea
+            className="journey-textarea"
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Your response or follow-up notes…"
+            rows={2}
+            value={notes}
+          />
+          <div className="journey-checklist-edit-actions">
+            <button
+              className="button button-primary"
+              disabled={busy}
+              onClick={() => void patch({ response_notes: notes })}
+              type="button"
+            >
+              <Save aria-hidden="true" size={12} />
+              Save note
+            </button>
+            <button
+              className="button button-outline"
+              onClick={() => {
+                setNotes(feedback.response_notes);
+                setEditingNotes(false);
+              }}
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="journey-checklist-notes-row">
+          {feedback.response_notes && (
+            <span className="journey-checklist-notes">{feedback.response_notes}</span>
+          )}
+          <button
+            aria-label="Edit response notes"
+            className="journey-icon-btn"
+            onClick={() => setEditingNotes(true)}
+            type="button"
+          >
+            <Pencil size={11} />
+          </button>
+        </div>
+      )}
+      {error && <p className="journey-error">{error}</p>}
+    </li>
+  );
+}
+
+function ReviewIntelligenceSection({
+  journeyId,
+  journey,
+  onChange,
+}: {
+  journeyId: string;
+  journey: JourneyDetail;
+  onChange: (updated: JourneyDetail) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [openTimeline, setOpenTimeline] = useState(false);
+  const [openReviews, setOpenReviews] = useState(false);
+
+  const sync = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      onChange(await syncJourneyPRReviews(journeyId));
+    } catch (e) {
+      setError(describeApiError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!journey.pr_number) {
+    return (
+      <Section title="Review intelligence">
+        <div className="journey-empty-panel">
+          <p>Link a pull request first — then you can track reviews and feedback here.</p>
+        </div>
+      </Section>
+    );
+  }
+
+  const summary = latestReviewSummary(journey.pr_reviews);
+  const hasData = journey.pr_review_synced_at_utc !== null;
+  const openFeedback = journey.pr_feedback.filter((f) => f.tracking_state === "open").length;
+
+  return (
+    <Section
+      badge={
+        journey.pr_feedback.length > 0
+          ? `${journey.pr_feedback.length - openFeedback}/${journey.pr_feedback.length} addressed`
+          : undefined
+      }
+      title="Review intelligence"
+    >
+      {error && <p className="journey-error">{error}</p>}
+      {hasData && summary && (
+        <div className="journey-review-summary">
+          <span className="journey-meta-item">Latest review state (GitHub):</span>
+          <span className="journey-badge journey-badge-purple">{summary}</span>
+        </div>
+      )}
+
+      {journey.pr_reviews.length > 0 && (
+        <div className="journey-review-block">
+          <button
+            className="journey-collapse-toggle"
+            onClick={() => setOpenReviews((v) => !v)}
+            type="button"
+          >
+            {openReviews ? "Hide reviews" : `Show reviews (${journey.pr_reviews.length})`}
+            {openReviews ? (
+              <ChevronUp aria-hidden="true" size={12} />
+            ) : (
+              <ChevronDown aria-hidden="true" size={12} />
+            )}
+          </button>
+          {openReviews && (
+            <ul className="journey-review-list">
+              {[...journey.pr_reviews].reverse().map((review) => (
+                <li className="journey-review-row" key={review.node_id}>
+                  <div className="journey-feedback-head">
+                    <span
+                      className={`journey-badge ${REVIEW_STATE_CLASSES[review.gh_state] ?? "journey-badge-neutral"}`}
+                    >
+                      {REVIEW_STATE_LABELS[review.gh_state] ?? review.gh_state}
+                    </span>
+                    {review.html_url ? (
+                      <a href={review.html_url} rel="noreferrer noopener" target="_blank">
+                        {review.author ?? "Unknown"}
+                        <ArrowUpRight aria-hidden="true" size={10} />
+                      </a>
+                    ) : (
+                      <span>{review.author ?? "Unknown"}</span>
+                    )}
+                    {review.submitted_at && (
+                      <span className="journey-meta-item">
+                        {formatTimestamp(review.submitted_at)}
+                      </span>
+                    )}
+                  </div>
+                  {review.body_excerpt && (
+                    <p className="journey-feedback-excerpt">{review.body_excerpt}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {journey.pr_feedback.length > 0 ? (
+        <ul className="journey-feedback-list">
+          {journey.pr_feedback.map((item) => (
+            <FeedbackItemCard
+              feedback={item}
+              journeyId={journeyId}
+              key={item.id}
+              onChange={onChange}
+            />
+          ))}
+        </ul>
+      ) : (
+        hasData && (
+          <div className="journey-empty-panel">
+            <p>
+              No review feedback items yet. Items appear when reviewers request changes or comment
+              on your PR.
+            </p>
+          </div>
+        )
+      )}
+
+      {journey.pr_timeline.length > 0 && (
+        <div className="journey-review-block">
+          <button
+            className="journey-collapse-toggle"
+            onClick={() => setOpenTimeline((v) => !v)}
+            type="button"
+          >
+            {openTimeline ? "Hide PR timeline" : `Show PR timeline (${journey.pr_timeline.length})`}
+            {openTimeline ? (
+              <ChevronUp aria-hidden="true" size={12} />
+            ) : (
+              <ChevronDown aria-hidden="true" size={12} />
+            )}
+          </button>
+          {openTimeline && (
+            <ol className="journey-event-log">
+              {[...journey.pr_timeline].reverse().map((event) => (
+                <li className="journey-event-item" key={`${event.kind}-${event.occurred_at}`}>
+                  <span className="journey-event-type">{event.kind.replace(/_/g, " ")}</span>
+                  <span className="journey-event-desc">{event.label}</span>
+                  <span className="journey-event-time">{formatTimestamp(event.occurred_at)}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+
+      <div className="journey-feedback-sync-row">
+        {journey.pr_review_synced_at_utc && (
+          <span className="journey-meta-item">
+            Review data synced {formatTimestamp(journey.pr_review_synced_at_utc)}
+          </span>
+        )}
+        <button
+          className="button button-outline"
+          disabled={busy}
+          onClick={() => void sync()}
+          title="Fetch latest review data from GitHub"
+          type="button"
+        >
+          {busy ? (
+            <Loader2 className="button-spinner" size={11} />
+          ) : (
+            <RefreshCw aria-hidden="true" size={11} />
+          )}
+          Sync reviews
+        </button>
+      </div>
+    </Section>
+  );
+}
+
 // ─── Tasks panel ─────────────────────────────────────────────────────────────
 
 function TasksSection({
@@ -741,6 +1082,11 @@ const JOURNAL_FIELDS: Array<{
     label: "Lessons learned",
     placeholder: "What did you learn from this contribution?…",
   },
+  {
+    key: "skills_practiced",
+    label: "Skills practiced",
+    placeholder: "Skills, tools, or frameworks you worked with…",
+  },
 ];
 
 function JournalSection({
@@ -762,6 +1108,7 @@ function JournalSection({
     tests_to_run: journal.tests_to_run,
     questions_for_maintainers: journal.questions_for_maintainers,
     lessons_learned: journal.lessons_learned,
+    skills_practiced: journal.skills_practiced,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -1024,6 +1371,7 @@ export function JourneyWorkspace({ journeyId }: { journeyId: string }) {
         <div className="journey-workspace-side">
           <IssueSection journey={journey} journeyId={journey.id} onChange={update} />
           <PullRequestSection journey={journey} journeyId={journey.id} onChange={update} />
+          <ReviewIntelligenceSection journey={journey} journeyId={journey.id} onChange={update} />
           <TasksSection journeyId={journey.id} onChange={update} tasks={journey.tasks} />
           <EventLog events={journey.events} />
         </div>

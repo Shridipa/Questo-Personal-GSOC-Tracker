@@ -75,6 +75,7 @@ class JournalUpdate(BaseModel):
     tests_to_run: str = Field(default="", max_length=5000)
     questions_for_maintainers: str = Field(default="", max_length=5000)
     lessons_learned: str = Field(default="", max_length=10000)
+    skills_practiced: str = Field(default="", max_length=5000)
 
 
 class JournalResponse(JournalUpdate):
@@ -125,6 +126,67 @@ class JourneyEventResponse(BaseModel):
     created_at_utc: str
 
 
+# ─── PR review intelligence (Phase 4) ───────────────────────────────────────
+
+PRReviewState = Literal["APPROVED", "CHANGES_REQUESTED", "COMMENTED", "DISMISSED"]
+
+VALID_REVIEW_STATES: set[str] = {
+    "APPROVED",
+    "CHANGES_REQUESTED",
+    "COMMENTED",
+    "DISMISSED",
+}
+
+
+class PRReviewResponse(BaseModel):
+    """A GitHub review as reported by GitHub — never inferred by Questo."""
+
+    node_id: str
+    gh_state: str
+    author: str | None = None
+    body_excerpt: str | None = None
+    html_url: str | None = None
+    submitted_at: str | None = None
+
+
+class PRFeedbackResponse(BaseModel):
+    """One GitHub review item plus the contributor's personal follow-up state.
+
+    `gh_state` is GitHub's review/comment state. `tracking_state` is purely the
+    user's own workflow marker and implies nothing about GitHub approval.
+    """
+
+    id: str
+    source_type: Literal["review", "review_comment"]
+    gh_node_id: str
+    gh_state: str
+    author: str | None = None
+    body_excerpt: str | None = None
+    html_url: str | None = None
+    submitted_at: str | None = None
+    response_notes: str = ""
+    tracking_state: Literal["open", "addressed", "not_applicable"] = "open"
+    created_at_utc: str
+    updated_at_utc: str
+
+
+class PRFeedbackUpdate(BaseModel):
+    tracking_state: Literal["open", "addressed", "not_applicable"] | None = None
+    response_notes: str | None = Field(default=None, max_length=2000)
+
+
+class PRTimelineEventResponse(BaseModel):
+    """One chronological PR event derived from real GitHub data only."""
+
+    occurred_at: str
+    kind: str
+    label: str
+
+
+class FeedbackTrackingStates:
+    VALID: set[str] = {"open", "addressed", "not_applicable"}
+
+
 class JourneySummaryResponse(BaseModel):
     id: str
     user_id: str
@@ -145,6 +207,9 @@ class JourneySummaryResponse(BaseModel):
     pr_url: str | None = None
     pr_state: str | None = None
     pr_is_draft: bool = False
+    pr_merged_at: str | None = None
+    pr_closed_at: str | None = None
+    pr_created_at: str | None = None
     checklist_completed_count: int = 0
     checklist_total_count: int = 10
     tasks_completed_count: int = 0
@@ -158,7 +223,12 @@ class JourneyDetailResponse(JourneySummaryResponse):
     issue_attached_at_utc: str | None = None
     pr_merged_at: str | None = None
     pr_closed_at: str | None = None
+    pr_created_at: str | None = None
     pr_synced_at_utc: str | None = None
+    pr_reviews: list[PRReviewResponse] = Field(default_factory=list)
+    pr_feedback: list[PRFeedbackResponse] = Field(default_factory=list)
+    pr_timeline: list[PRTimelineEventResponse] = Field(default_factory=list)
+    pr_review_synced_at_utc: str | None = None
     checklist: list[ChecklistItem] = Field(default_factory=list)
     journal: JournalResponse
     tasks: list[TaskResponse] = Field(default_factory=list)
@@ -167,3 +237,20 @@ class JourneyDetailResponse(JourneySummaryResponse):
 
 class JourneyListResponse(BaseModel):
     journeys: list[JourneySummaryResponse]
+
+
+class PortfolioEntryResponse(JourneySummaryResponse):
+    """One persisted journey as shown in the portfolio, with outcome fields."""
+
+    pr_complete: bool
+    pr_outcome: str
+    lessons_learned: str = ""
+    skills_practiced: str = ""
+    completed_at_utc: str | None = None
+
+
+class PortfolioResponse(BaseModel):
+    entries: list[PortfolioEntryResponse]
+    total: int
+    limit: int
+    offset: int

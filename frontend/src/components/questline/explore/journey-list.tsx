@@ -238,6 +238,16 @@ export function JourneyList() {
           Each journey tracks one repository contribution — from studying the issue to getting your
           PR merged.
         </p>
+        <div className="journey-card-meta" style={{ marginTop: 8 }}>
+          <Link
+            className="journey-meta-item"
+            href="/portfolio"
+            style={{ color: "var(--accent-purple)" }}
+          >
+            <GitPullRequest aria-hidden="true" size={11} />
+            Open your contribution portfolio →
+          </Link>
+        </div>
       </div>
 
       {journeys.length === 0 ? (

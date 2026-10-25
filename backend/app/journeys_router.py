@@ -22,6 +22,7 @@ from .schemas_journeys import (
     JourneyListResponse,
     JourneyStatusUpdate,
     JourneySummaryResponse,
+    PRFeedbackUpdate,
     PullRequestLinkPayload,
     TaskCreate,
     TaskResponse,
@@ -452,5 +453,100 @@ def unlink_pull_request(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Contribution journey not found.",
+        )
+    return JourneyDetailResponse.model_validate(updated)
+
+
+# ─── Phase 4: PR review intelligence ──────────────────────────────────────────
+
+
+@router.post(
+    "/{journey_id}/pr/reviews/refresh",
+    response_model=JourneyDetailResponse,
+)
+def refresh_pull_request_reviews(
+    journey_id: str,
+    current_user: AuthUser = Depends(get_current_user),
+) -> JourneyDetailResponse:
+    """Manually sync PR review data (reviews + review comments) from GitHub.
+
+    On failure nothing cached is overwritten: sync_pr_reviews is only reached
+    after both GitHub fetches succeed.
+    """
+    journey = journeys_data.get_journey_detail(journey_id, current_user.id)
+    if not journey:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contribution journey not found.",
+        )
+
+    pr_number = journey.get("pr_number")
+    if not pr_number:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No pull request is linked to this journey yet.",
+        )
+
+    try:
+        reviews = github_service.fetch_pull_request_reviews(
+            journey["repo_owner"], journey["repo_name"], pr_number
+        )
+        comments = github_service.fetch_pull_request_review_comments(
+            journey["repo_owner"], journey["repo_name"], pr_number
+        )
+    except github_service.NotFoundError as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"GitHub pull request #{pr_number} could not be found "
+                "while syncing reviews."
+            ),
+        ) from err
+    except ExternalSourceError as err:
+        raise HTTPException(
+            status_code=err.status if err.status >= 400 else 503,
+            detail=f"Could not sync PR reviews from GitHub: {err}",
+        ) from err
+
+    updated = journeys_data.sync_pr_reviews(journey_id, current_user.id, reviews, comments)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contribution journey not found.",
+        )
+    return JourneyDetailResponse.model_validate(updated)
+
+
+@router.patch(
+    "/{journey_id}/pr/feedback/{feedback_id}",
+    response_model=JourneyDetailResponse,
+)
+def update_pr_feedback_item(
+    journey_id: str,
+    feedback_id: str,
+    payload: PRFeedbackUpdate,
+    current_user: AuthUser = Depends(get_current_user),
+) -> JourneyDetailResponse:
+    """Update the personal tracking state / notes of one feedback item.
+
+    This only changes Questo's private record — it does not touch GitHub and
+    implies nothing about reviewer approval.
+    """
+    try:
+        updated = journeys_data.update_feedback_item(
+            journey_id,
+            current_user.id,
+            feedback_id,
+            payload.tracking_state,
+            payload.response_notes,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error)
+        ) from error
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Feedback item or contribution journey not found.",
         )
     return JourneyDetailResponse.model_validate(updated)

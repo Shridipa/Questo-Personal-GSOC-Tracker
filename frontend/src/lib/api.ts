@@ -1230,6 +1230,7 @@ export type JournalFields = {
   tests_to_run: string;
   questions_for_maintainers: string;
   lessons_learned: string;
+  skills_practiced: string;
   updated_at_utc: string;
 };
 
@@ -1253,6 +1254,8 @@ export type JourneySummary = {
   pr_url: string | null;
   pr_state: string | null;
   pr_is_draft: boolean;
+  pr_merged_at?: string | null;
+  pr_closed_at?: string | null;
   checklist_completed_count: number;
   checklist_total_count: number;
   tasks_completed_count: number;
@@ -1261,12 +1264,66 @@ export type JourneySummary = {
   updated_at_utc: string;
 };
 
+export type PRReview = {
+  node_id: string;
+  gh_state: string;
+  author: string | null;
+  body_excerpt: string | null;
+  html_url: string | null;
+  submitted_at: string | null;
+};
+
+export type PRFeedbackTrackingState = "open" | "addressed" | "not_applicable";
+
+export type PRFeedback = {
+  id: string;
+  source_type: "review" | "review_comment";
+  gh_node_id: string;
+  gh_state: string;
+  author: string | null;
+  body_excerpt: string | null;
+  html_url: string | null;
+  submitted_at: string | null;
+  response_notes: string;
+  tracking_state: PRFeedbackTrackingState;
+  created_at_utc: string;
+  updated_at_utc: string;
+};
+
+export type PRTimelineEvent = {
+  occurred_at: string;
+  kind: string;
+  label: string;
+};
+
+export type PortfolioOutcome = "merged" | "closed_unmerged" | "open" | "no_pr" | "unknown";
+
+export type PortfolioEntry = JourneySummary & {
+  pr_complete: boolean;
+  pr_outcome: PortfolioOutcome;
+  lessons_learned: string;
+  skills_practiced: string;
+  completed_at_utc: string | null;
+};
+
+export type PortfolioResponse = {
+  entries: PortfolioEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 export type JourneyDetail = JourneySummary & {
   issue_comments: number;
   issue_attached_at_utc: string | null;
   pr_merged_at: string | null;
   pr_closed_at: string | null;
+  pr_created_at?: string | null;
   pr_synced_at_utc: string | null;
+  pr_reviews: PRReview[];
+  pr_feedback: PRFeedback[];
+  pr_timeline: PRTimelineEvent[];
+  pr_review_synced_at_utc: string | null;
   checklist: JourneyChecklistItem[];
   journal: JournalFields;
   tasks: JourneyTask[];
@@ -1490,6 +1547,73 @@ export async function unlinkJourneyPr(journeyId: string): Promise<JourneyDetail>
     throw new ApiError("Questo API returned a journey in an unexpected format.");
   }
   return payload as JourneyDetail;
+}
+
+// ─── PR review intelligence (Phase 4) ────────────────────────────────────────
+
+export async function syncJourneyPRReviews(journeyId: string): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/pr/reviews/refresh`,
+    "POST",
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+export async function updatePRFeedback(
+  journeyId: string,
+  feedbackId: string,
+  update: { tracking_state?: PRFeedbackTrackingState; response_notes?: string },
+): Promise<JourneyDetail> {
+  const payload = await requestJson(
+    `/api/journeys/${encodeURIComponent(journeyId)}/pr/feedback/${encodeURIComponent(feedbackId)}`,
+    "PATCH",
+    {
+      tracking_state: update.tracking_state ?? null,
+      response_notes: update.response_notes ?? null,
+    },
+  );
+  if (!isRecord(payload) || !isJourneySummary(payload)) {
+    throw new ApiError("Questo API returned a journey in an unexpected format.");
+  }
+  return payload as JourneyDetail;
+}
+
+// ─── Contributor portfolio (Phase 4) ─────────────────────────────────────────
+
+function isPortfolioEntry(value: unknown): value is PortfolioEntry {
+  return (
+    isRecord(value) &&
+    isJourneySummary(value) &&
+    typeof (value as { pr_outcome?: unknown }).pr_outcome === "string" &&
+    typeof (value as { pr_complete?: unknown }).pr_complete === "boolean"
+  );
+}
+
+export async function fetchPortfolio(options?: {
+  status?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<PortfolioResponse> {
+  const params = new URLSearchParams();
+  if (options?.status) params.set("status", options.status);
+  if (options?.search) params.set("search", options.search);
+  if (options?.limit !== undefined) params.set("limit", String(options.limit));
+  if (options?.offset !== undefined) params.set("offset", String(options.offset));
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  const payload = await requestJson(`/api/portfolio${suffix}`);
+  if (
+    !isRecord(payload) ||
+    !Array.isArray(payload.entries) ||
+    !payload.entries.every(isPortfolioEntry) ||
+    typeof payload.total !== "number"
+  ) {
+    throw new ApiError("Questo API returned the portfolio in an unexpected format.");
+  }
+  return payload as unknown as PortfolioResponse;
 }
 
 /** Normalize a thrown error into a user-facing message without faking success. */

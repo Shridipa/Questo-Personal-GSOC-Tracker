@@ -37,6 +37,15 @@ DEFAULT_TASKS: list[str] = [
 
 ACTIVE_STATUSES = ("preparing", "issue_selected", "in_progress", "pr_open", "changes_requested")
 
+TRACKING_STATES = ("open", "addressed", "not_applicable")
+
+
+def _add_column_if_missing(connection: Any, table: str, column: str, ddl: str) -> None:
+    """Repeatable SQLite migration: add a column only when it does not exist yet."""
+    columns = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in columns:
+        connection.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+
 
 def initialize_journey_tables() -> None:
     with closing(get_connection()) as connection, connection:
@@ -162,6 +171,56 @@ def initialize_journey_tables() -> None:
             ON journey_events(journey_id, created_at_utc DESC)
             """
         )
+        # Repeatable migrations for pre-existing databases
+        _add_column_if_missing(
+            connection,
+            "contribution_journeys",
+            "pr_created_at",
+            "pr_created_at TEXT",
+        )
+        _add_column_if_missing(
+            connection,
+            "journey_journal",
+            "skills_practiced",
+            "skills_practiced TEXT NOT NULL DEFAULT ''",
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS journey_pr_reviews (
+                journey_id TEXT PRIMARY KEY REFERENCES contribution_journeys(id) ON DELETE CASCADE,
+                reviews_json TEXT NOT NULL DEFAULT '[]',
+                comments_json TEXT NOT NULL DEFAULT '[]',
+                synced_at_utc TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS journey_pr_feedback (
+                id TEXT PRIMARY KEY,
+                journey_id TEXT NOT NULL REFERENCES contribution_journeys(id) ON DELETE CASCADE,
+                source_type TEXT NOT NULL CHECK (source_type IN ('review', 'review_comment')),
+                gh_node_id TEXT NOT NULL,
+                gh_state TEXT NOT NULL,
+                author TEXT,
+                body_excerpt TEXT,
+                html_url TEXT,
+                submitted_at TEXT,
+                response_notes TEXT NOT NULL DEFAULT '',
+                tracking_state TEXT NOT NULL DEFAULT 'open'
+                    CHECK (tracking_state IN ('open', 'addressed', 'not_applicable')),
+                created_at_utc TEXT NOT NULL,
+                updated_at_utc TEXT NOT NULL,
+                UNIQUE (journey_id, gh_node_id)
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_journey_feedback_updated
+            ON journey_pr_feedback(journey_id, updated_at_utc DESC)
+            """
+        )
 
 
 def _row_to_summary(row: dict[str, Any]) -> dict[str, Any]:
@@ -191,6 +250,9 @@ def _row_to_summary(row: dict[str, Any]) -> dict[str, Any]:
         "pr_url": row.get("pr_url"),
         "pr_state": row.get("pr_state"),
         "pr_is_draft": bool(row.get("pr_is_draft", 0)),
+        "pr_merged_at": row.get("pr_merged_at"),
+        "pr_closed_at": row.get("pr_closed_at"),
+        "pr_created_at": row.get("pr_created_at"),
         "checklist_completed_count": int(row.get("checklist_completed_count", 0)),
         "checklist_total_count": int(row.get("checklist_total_count", len(DEFAULT_CHECKLIST))),
         "tasks_completed_count": int(row.get("tasks_completed_count", 0)),
@@ -348,9 +410,42 @@ def get_journey_detail(journey_id: str, user_id: str) -> dict[str, Any] | None:
         raw = dict(journey_row)
         summary["issue_comments"] = raw.get("issue_comments", 0)
         summary["issue_attached_at_utc"] = raw.get("issue_attached_at_utc")
-        summary["pr_merged_at"] = raw.get("pr_merged_at")
-        summary["pr_closed_at"] = raw.get("pr_closed_at")
         summary["pr_synced_at_utc"] = raw.get("pr_synced_at_utc")
+
+        # Review cache, feedback items and derived PR timeline (Phase 4)
+        review_cache_row = connection.execute(
+            "SELECT reviews_json, comments_json, synced_at_utc FROM journey_pr_reviews WHERE journey_id = ?",
+            (journey_id,),
+        ).fetchone()
+        reviews: list[dict[str, Any]] = []
+        comments: list[dict[str, Any]] = []
+        if review_cache_row:
+            try:
+                reviews = json.loads(review_cache_row["reviews_json"])
+            except (TypeError, ValueError):
+                reviews = []
+            try:
+                comments = json.loads(review_cache_row["comments_json"])
+            except (TypeError, ValueError):
+                comments = []
+            summary["pr_review_synced_at_utc"] = review_cache_row["synced_at_utc"]
+        else:
+            summary["pr_review_synced_at_utc"] = None
+        summary["pr_reviews"] = [_known_review(r) for r in reviews]
+        summary["pr_timeline"] = build_pr_timeline(dict(raw), reviews)
+
+        feedback_rows = connection.execute(
+            """
+            SELECT id, source_type, gh_node_id, gh_state, author, body_excerpt, html_url,
+                   submitted_at, response_notes, tracking_state, created_at_utc, updated_at_utc
+            FROM journey_pr_feedback
+            WHERE journey_id = ?
+            ORDER BY (tracking_state = 'open') DESC, updated_at_utc DESC
+            LIMIT 200
+            """,
+            (journey_id,),
+        ).fetchall()
+        summary["pr_feedback"] = [dict(row) for row in feedback_rows]
 
         # Checklist
         checklist_rows = connection.execute(
@@ -382,7 +477,7 @@ def get_journey_detail(journey_id: str, user_id: str) -> dict[str, Any] | None:
             """
             SELECT summary, reproduction_steps, expected_vs_actual, relevant_files,
                    potential_causes, proposed_solution, tests_to_run,
-                   questions_for_maintainers, lessons_learned, updated_at_utc
+                   questions_for_maintainers, lessons_learned, skills_practiced, updated_at_utc
             FROM journey_journal
             WHERE journey_id = ?
             """,
@@ -401,6 +496,7 @@ def get_journey_detail(journey_id: str, user_id: str) -> dict[str, Any] | None:
                 "tests_to_run": "",
                 "questions_for_maintainers": "",
                 "lessons_learned": "",
+                "skills_practiced": "",
                 "updated_at_utc": summary["updated_at_utc"],
             }
 
@@ -540,6 +636,7 @@ def update_journal(
                 tests_to_run = ?,
                 questions_for_maintainers = ?,
                 lessons_learned = ?,
+                skills_practiced = ?,
                 updated_at_utc = ?
             WHERE journey_id = ?
             """,
@@ -553,6 +650,7 @@ def update_journal(
                 values.get("tests_to_run", ""),
                 values.get("questions_for_maintainers", ""),
                 values.get("lessons_learned", ""),
+                values.get("skills_practiced", ""),
                 now,
                 journey_id,
             ),
@@ -810,6 +908,7 @@ def link_pull_request(
                 pr_is_draft = ?,
                 pr_merged_at = ?,
                 pr_closed_at = ?,
+                pr_created_at = ?,
                 pr_synced_at_utc = ?,
                 status = ?,
                 updated_at_utc = ?
@@ -823,6 +922,7 @@ def link_pull_request(
                 1 if pr_info.get("is_draft") else 0,
                 pr_info.get("merged_at"),
                 pr_info.get("closed_at"),
+                pr_info.get("created_at"),
                 now,
                 new_status,
                 now,
@@ -866,6 +966,7 @@ def unlink_pull_request(journey_id: str, user_id: str) -> dict[str, Any] | None:
                 pr_is_draft = 0,
                 pr_merged_at = NULL,
                 pr_closed_at = NULL,
+                pr_created_at = NULL,
                 pr_synced_at_utc = NULL,
                 status = ?,
                 updated_at_utc = ?
@@ -883,3 +984,358 @@ def unlink_pull_request(journey_id: str, user_id: str) -> dict[str, Any] | None:
         )
 
     return get_journey_detail(journey_id, user_id)
+
+
+# ─── PR review intelligence (Phase 4) ───────────────────────────────────────
+
+
+def _known_review(review: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "node_id": str(review.get("node_id", "")),
+        "gh_state": str(review.get("gh_state") or review.get("state") or "COMMENTED"),
+        "author": review.get("author"),
+        "body_excerpt": review.get("body_excerpt"),
+        "html_url": review.get("html_url"),
+        "submitted_at": review.get("submitted_at"),
+    }
+
+
+def build_pr_timeline(
+    journey_row: dict[str, Any], reviews: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Chronological PR events derived strictly from real GitHub-timestamped data.
+
+    Nothing is invented: events only appear when the underlying field exists.
+    """
+    events: list[dict[str, Any]] = []
+    if journey_row.get("pr_created_at"):
+        events.append(
+            {
+                "occurred_at": journey_row["pr_created_at"],
+                "kind": "pr_opened",
+                "label": "Pull request opened.",
+            }
+        )
+    for review in reviews:
+        state = str(review.get("gh_state") or review.get("state") or "").upper()
+        submitted = review.get("submitted_at")
+        if not submitted:
+            continue
+        kind_map = {
+            "CHANGES_REQUESTED": "changes_requested",
+            "APPROVED": "approved",
+            "DISMISSED": "review_dismissed",
+            "COMMENTED": "review_commented",
+        }
+        if state not in kind_map:
+            continue
+        actor = review.get("author") or "Unknown reviewer"
+        labels = {
+            "changes_requested": f"{actor} requested changes.",
+            "approved": f"{actor} approved the pull request.",
+            "review_dismissed": f"{actor}'s review was dismissed.",
+            "review_commented": f"{actor} left a review comment.",
+        }
+        events.append(
+            {
+                "occurred_at": submitted,
+                "kind": kind_map[state],
+                "label": labels[kind_map[state]],
+            }
+        )
+    if journey_row.get("pr_merged_at"):
+        events.append(
+            {
+                "occurred_at": journey_row["pr_merged_at"],
+                "kind": "pr_merged",
+                "label": "Pull request merged on GitHub.",
+            }
+        )
+    elif journey_row.get("pr_closed_at"):
+        events.append(
+            {
+                "occurred_at": journey_row["pr_closed_at"],
+                "kind": "pr_closed",
+                "label": "Pull request closed without merging.",
+            }
+        )
+    events.sort(key=lambda event: event["occurred_at"] or "")
+    return events
+
+
+def sync_pr_reviews(
+    journey_id: str,
+    user_id: str,
+    reviews: list[dict[str, Any]],
+    comments: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Persist a successful review sync and mirror actionable items into feedback.
+
+    The review payload is only written after a successful GitHub fetch, so a
+    failed refresh never destroys cached data. Personal tracking state on
+    existing feedback items is preserved across re-syncs.
+    """
+    now = datetime.now(UTC).isoformat()
+    reviews_json = json.dumps(reviews)
+    comments_json = json.dumps(comments)
+
+    with closing(get_connection()) as connection, connection:
+        journey_row = connection.execute(
+            "SELECT id FROM contribution_journeys WHERE id = ? AND user_id = ?",
+            (journey_id, user_id),
+        ).fetchone()
+        if not journey_row:
+            return None
+
+        connection.execute(
+            """
+            INSERT INTO journey_pr_reviews (journey_id, reviews_json, comments_json, synced_at_utc)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(journey_id) DO UPDATE SET
+                reviews_json = excluded.reviews_json,
+                comments_json = excluded.comments_json,
+                synced_at_utc = excluded.synced_at_utc
+            """,
+            (journey_id, reviews_json, comments_json, now),
+        )
+
+        imported = 0
+        for review in reviews:
+            state = str(review.get("gh_state") or review.get("state") or "").upper()
+            if state != "CHANGES_REQUESTED":
+                continue
+            node_id = str(review.get("node_id") or "")
+            if not node_id:
+                continue
+            imported += _upsert_feedback(
+                connection,
+                journey_id=journey_id,
+                source_type="review",
+                node_id=node_id,
+                gh_state=state,
+                author=review.get("author"),
+                body_excerpt=review.get("body_excerpt"),
+                html_url=review.get("html_url"),
+                submitted_at=review.get("submitted_at"),
+                now=now,
+            )
+        for comment in comments:
+            node_id = str(comment.get("node_id") or "")
+            if not node_id:
+                continue
+            imported += _upsert_feedback(
+                connection,
+                journey_id=journey_id,
+                source_type="review_comment",
+                node_id=node_id,
+                gh_state=str(comment.get("gh_state") or comment.get("state") or "COMMENTED"),
+                author=comment.get("author"),
+                body_excerpt=comment.get("body_excerpt"),
+                html_url=comment.get("html_url"),
+                submitted_at=comment.get("submitted_at"),
+                now=now,
+            )
+
+        connection.execute(
+            "UPDATE contribution_journeys SET updated_at_utc = ? WHERE id = ?",
+            (now, journey_id),
+        )
+        connection.execute(
+            """
+            INSERT INTO journey_events (id, journey_id, event_type, description, created_at_utc)
+            VALUES (?, ?, 'pr_reviews_synced', ?, ?)
+            """,
+            (
+                str(uuid4()),
+                journey_id,
+                f"Synced PR review data from GitHub ({len(reviews)} reviews, "
+                f"{len(comments)} review comments, {imported} new feedback items).",
+                now,
+            ),
+        )
+
+    return get_journey_detail(journey_id, user_id)
+
+
+def _upsert_feedback(
+    connection: Any,
+    *,
+    journey_id: str,
+    source_type: str,
+    node_id: str,
+    gh_state: str,
+    author: str | None,
+    body_excerpt: str | None,
+    html_url: str | None,
+    submitted_at: str | None,
+    now: str,
+) -> int:
+    existing = connection.execute(
+        "SELECT id FROM journey_pr_feedback WHERE journey_id = ? AND gh_node_id = ?",
+        (journey_id, node_id),
+    ).fetchone()
+    if existing:
+        connection.execute(
+            """
+            UPDATE journey_pr_feedback
+            SET source_type = ?, gh_state = ?, author = ?, body_excerpt = ?,
+                html_url = ?, submitted_at = ?, updated_at_utc = ?
+            WHERE journey_id = ? AND gh_node_id = ?
+            """,
+            (
+                source_type,
+                gh_state,
+                author,
+                body_excerpt,
+                html_url,
+                submitted_at,
+                now,
+                journey_id,
+                node_id,
+            ),
+        )
+        return 0
+    connection.execute(
+        """
+        INSERT INTO journey_pr_feedback (
+            id, journey_id, source_type, gh_node_id, gh_state, author,
+            body_excerpt, html_url, submitted_at, response_notes, tracking_state,
+            created_at_utc, updated_at_utc
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', 'open', ?, ?)
+        """,
+        (
+            str(uuid4()),
+            journey_id,
+            source_type,
+            node_id,
+            gh_state,
+            author,
+            body_excerpt,
+            html_url,
+            submitted_at,
+            now,
+            now,
+        ),
+    )
+    return 1
+
+
+def update_feedback_item(
+    journey_id: str,
+    user_id: str,
+    feedback_id: str,
+    tracking_state: str | None = None,
+    response_notes: str | None = None,
+) -> dict[str, Any] | None:
+    """Update the personal tracking state / notes of one feedback item."""
+    if tracking_state is None and response_notes is None:
+        return get_journey_detail(journey_id, user_id)
+
+    if tracking_state is not None and tracking_state not in TRACKING_STATES:
+        raise ValueError(f"Invalid tracking state '{tracking_state}'.")
+
+    now = datetime.now(UTC).isoformat()
+    with closing(get_connection()) as connection, connection:
+        owner_check = connection.execute(
+            "SELECT id FROM contribution_journeys WHERE id = ? AND user_id = ?",
+            (journey_id, user_id),
+        ).fetchone()
+        if not owner_check:
+            return None
+
+        updates: list[str] = []
+        params: list[Any] = []
+        if tracking_state is not None:
+            updates.append("tracking_state = ?")
+            params.append(tracking_state)
+        if response_notes is not None:
+            updates.append("response_notes = ?")
+            params.append(response_notes)
+        updates.append("updated_at_utc = ?")
+        params.append(now)
+        params.extend([journey_id, feedback_id])
+        cur = connection.execute(
+            f"""
+            UPDATE journey_pr_feedback
+            SET {", ".join(updates)}
+            WHERE journey_id = ? AND id = ?
+            """,
+            tuple(params),
+        )
+        if cur.rowcount == 0:
+            return None
+        connection.execute(
+            "UPDATE contribution_journeys SET updated_at_utc = ? WHERE id = ?",
+            (now, journey_id),
+        )
+    return get_journey_detail(journey_id, user_id)
+
+
+def _derive_pr_outcome(row: dict[str, Any]) -> str:
+    """Outcome from GitHub-confirmed data only — never from a journey status alone."""
+    if not row.get("pr_number"):
+        return "no_pr"
+    state = row.get("pr_state")
+    if state == "merged" or row.get("pr_merged_at"):
+        return "merged"
+    if state == "closed":
+        return "closed_unmerged"
+    if state == "open":
+        return "open"
+    return "unknown"
+
+
+def list_portfolio_journeys(
+    user_id: str,
+    *,
+    status_filter: str | None = None,
+    search: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple[list[dict[str, Any]], int]:
+    """Persisted contribution journeys for the portfolio, filtered and bounded."""
+    where = " WHERE j.user_id = ?"
+    params: list[Any] = [user_id]
+    if status_filter:
+        where += " AND j.status = ?"
+        params.append(status_filter)
+    if search and search.strip():
+        like = f"%{search.strip()}%"
+        where += " AND (j.repo_full_name LIKE ? OR j.org_slug LIKE ? OR j.title LIKE ?)"
+        params.extend([like, like, like])
+
+    with closing(get_connection()) as connection:
+        total_row = connection.execute(
+            f"SELECT COUNT(*) FROM contribution_journeys j{where}", tuple(params)
+        ).fetchone()
+        total = int(total_row[0])
+
+        rows = connection.execute(
+            f"""
+            SELECT j.*,
+                (SELECT COUNT(*) FROM journey_checklist_items WHERE journey_id = j.id AND completed = 1) AS checklist_completed_count,
+                (SELECT COUNT(*) FROM journey_checklist_items WHERE journey_id = j.id) AS checklist_total_count,
+                (SELECT COUNT(*) FROM journey_tasks WHERE journey_id = j.id AND completed = 1) AS tasks_completed_count,
+                (SELECT COUNT(*) FROM journey_tasks WHERE journey_id = j.id) AS tasks_total_count,
+                jj.lessons_learned AS lessons_learned,
+                jj.skills_practiced AS skills_practiced
+            FROM contribution_journeys j
+            LEFT JOIN journey_journal jj ON jj.journey_id = j.id{where}
+            ORDER BY j.created_at_utc DESC
+            LIMIT ? OFFSET ?
+            """,
+            tuple([*params, limit, offset]),
+        ).fetchall()
+
+        entries: list[dict[str, Any]] = []
+        for row in rows:
+            row_dict = dict(row)
+            entry = _row_to_summary(row_dict)
+            entry["lessons_learned"] = row_dict["lessons_learned"] or ""
+            entry["skills_practiced"] = row_dict["skills_practiced"] or ""
+            outcome = _derive_pr_outcome(row_dict)
+            entry["pr_outcome"] = outcome
+            entry["pr_complete"] = outcome == "merged"
+            entry["completed_at_utc"] = row_dict["pr_merged_at"] if outcome == "merged" else None
+            entries.append(entry)
+        return entries, total

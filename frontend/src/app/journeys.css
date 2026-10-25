@@ -784,3 +784,130 @@
     align-items: stretch;
   }
 }
+/* ─── Review intelligence (Phase 4) ─────────────────────────────────────────── */
+
+.journey-review-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.journey-review-block {
+  margin-bottom: 10px;
+}
+
+.journey-collapse-toggle {
+  align-items: center;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-2);
+  display: inline-flex;
+  font-size: 0.78rem;
+  gap: 6px;
+  padding: 4px 10px;
+}
+
+.journey-collapse-toggle:hover {
+  color: var(--text-1);
+}
+
+.journey-review-list,
+.journey-feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+}
+
+.journey-review-row,
+.journey-feedback-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.journey-feedback-item.is-addressed {
+  border-color: var(--green);
+}
+
+.journey-feedback-item.is-not_applicable {
+  opacity: 0.7;
+}
+
+.journey-feedback-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.journey-feedback-head a {
+  align-items: center;
+  color: var(--accent-purple);
+  display: inline-flex;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.journey-feedback-excerpt {
+  color: var(--text-1);
+  font-size: 0.85rem;
+  margin: 6px 0;
+  white-space: pre-wrap;
+}
+
+.journey-feedback-tracking {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.journey-feedback-state-btn {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-1);
+  font-size: 0.72rem;
+  padding: 3px 10px;
+}
+
+.journey-feedback-state-btn.is-active {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  font-weight: 600;
+}
+
+.journey-feedback-notes-edit {
+  margin-top: 4px;
+}
+
+.journey-feedback-sync-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+/* ─── Portfolio (Phase 4) ────────────────────────────────────────────────────── */
+
+.journey-portfolio-share {
+  margin-top: 18px;
+}
+
+.journey-portfolio-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}

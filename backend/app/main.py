@@ -46,6 +46,7 @@ from .explore_router import router as explore_router
 from .http_client import ExternalSourceError
 from .journeys_data import initialize_journey_tables
 from .journeys_router import router as journeys_router
+from .portfolio_router import router as portfolio_router
 from .orgs_data import initialize_explore_tables
 from .schemas import (
     AccountClaimResponse,
@@ -94,6 +95,7 @@ app = FastAPI(
 
 app.include_router(explore_router)
 app.include_router(journeys_router)
+app.include_router(portfolio_router)
 
 
 @app.exception_handler(ExternalSourceError)

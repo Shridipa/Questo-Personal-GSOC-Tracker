@@ -303,6 +303,90 @@ def fetch_single_issue(
     }
 
 
+def fetch_pull_request_reviews(
+    owner: str, repo: str, pull_number: int, *, client: httpx.Client | None = None
+) -> list[dict[str, Any]]:
+    """Reviews submitted on a pull request (single bounded page, newest last).
+
+    Review states are GitHub's own: APPROVED, CHANGES_REQUESTED, COMMENTED,
+    DISMISSED, PENDING (PENDING reviews are only visible to their author via
+    authenticated endpoints, so unauthenticated sync usually never sees them).
+    """
+    owner = validate_owner(owner)
+    repo = validate_repo_name(repo)
+    if pull_number <= 0:
+        raise NotFoundError("Invalid pull request number.")
+    payload = _request(
+        f"/repos/{owner}/{repo}/pulls/{pull_number}/reviews",
+        params={"per_page": 50, "page": 1},
+        client=client,
+    )
+    if not isinstance(payload, list):
+        raise ExternalSourceError("GitHub returned an unexpected reviews payload.", 503)
+    return [
+        {
+            "node_id": item.get("node_id") or str(item.get("id", "")),
+            "state": item.get("state"),
+            "author": (item.get("user") or {}).get("login")
+            if isinstance(item.get("user"), dict)
+            else None,
+            "body_excerpt": _excerpt(item.get("body")),
+            "html_url": item.get("html_url"),
+            "submitted_at": item.get("submitted_at"),
+        }
+        for item in payload
+        if isinstance(item, dict) and (item.get("node_id") or item.get("id"))
+    ]
+
+
+def fetch_pull_request_review_comments(
+    owner: str, repo: str, pull_number: int, *, client: httpx.Client | None = None
+) -> list[dict[str, Any]]:
+    """Review-thread comments on a pull request (single bounded page).
+
+    These are comments attached to diffs, distinct from issue-style comments
+    and from the review body itself.
+    """
+    owner = validate_owner(owner)
+    repo = validate_repo_name(repo)
+    if pull_number <= 0:
+        raise NotFoundError("Invalid pull request number.")
+    payload = _request(
+        f"/repos/{owner}/{repo}/pulls/{pull_number}/comments",
+        params={"per_page": 50, "page": 1},
+        client=client,
+    )
+    if not isinstance(payload, list):
+        raise ExternalSourceError(
+            "GitHub returned an unexpected review-comment payload.", 503
+        )
+    return [
+        {
+            "node_id": item.get("node_id") or str(item.get("id", "")),
+            "author": (item.get("user") or {}).get("login")
+            if isinstance(item.get("user"), dict)
+            else None,
+            "body_excerpt": _excerpt(item.get("body")),
+            "html_url": item.get("html_url"),
+            "submitted_at": item.get("created_at"),
+        }
+        for item in payload
+        if isinstance(item, dict) and (item.get("node_id") or item.get("id"))
+    ]
+
+
+def _excerpt(text: Any, limit: int = 400) -> str | None:
+    """Return a bounded plain-text excerpt of a GitHub comment body or None."""
+    if not isinstance(text, str):
+        return None
+    cleaned = text.strip()
+    if not cleaned:
+        return None
+    if len(cleaned) <= limit:
+        return cleaned
+    return cleaned[: limit - 1].rstrip() + "…"
+
+
 def fetch_single_pull_request(
     owner: str, repo: str, pull_number: int, *, client: httpx.Client | None = None
 ) -> dict[str, Any]:

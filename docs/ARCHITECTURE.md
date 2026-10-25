@@ -80,6 +80,15 @@ SQLite and domain services
 - Review and deadline writes use parameterized SQLite operations in transactions. Pydantic validates dates, times, URLs, week ranges, statuses, and UUID route IDs.
 - Reminder delivery remains future work; reminder and celebration toggles are persisted preferences only.
 
+## Contribution workspace (explore, journeys, reviews, portfolio)
+
+- Supabase authentication: the browser signs in with Supabase email auth; the backend verifies each Supabase JWT (`SUPABASE_URL`, `SUPABASE_JWT_SECRET`) and scopes every contribution query to the authenticated user id. Requests for another user's journey return 404.
+- `/api/explore` serves GitHub organization, repository, and open-issue listings through the shared GitHub REST client (`app/github_service.py`). Owner/repo names are validated against GitHub login rules before any request is built, issues and pull requests are kept distinct, and responses are cached with TTLs (`GITHUB_CACHE_TTL_REPOS_HOURS`, `GITHUB_CACHE_TTL_ISSUES_MINUTES`, `GSOC_ORGS_SYNC_TTL_HOURS`). An optional server-side `GITHUB_TOKEN` raises the rate-limit ceiling; it is never sent to the browser.
+- `/api/journeys` provides idempotent journey start (one active journey per user and repo), per-item checklist and journal updates, personal tasks, and issue/PR links. Attached issue or PR URLs are parsed server-side and rejected unless the owner/repo in the URL matches the journey's repository; the referenced issue or PR is then fetched from GitHub before the link is stored.
+- PR review intelligence: the sync endpoint fetches reviews and review-thread comments from GitHub, then persists them only after both fetches succeed, so a failed refresh never destroys cached data. Review rows are deduplicated by stable GitHub identifiers. Changes-requested reviews (and review comments) mirror into per-item feedback records with the user's own tracking state and response notes, which re-syncs never overwrite. GitHub's review state and the personal tracking state are stored separately and displayed distinctly.
+- `/api/portfolio` aggregates the user's journeys with GitHub-confirmed PR outcomes (`merged`, `open`, `closed_unmerged`, `no_pr`) derived from stored PR state and merge timestamps only — never from a journey status alone. Entries support status/search filtering and pagination; journal fields included in the response are only the public-friendly skills and lessons fields.
+- `journey_pr_reviews`, `journey_pr_feedback`, `journey_journal` (`skills_practiced` added by migration), and related tables are created idempotently.
+
 ## Data and trust boundaries
 
 - Quest and phase definitions, completion records, and XP ledger entries are persisted.
