@@ -437,3 +437,13 @@ def test_issues_endpoint_filters_pull_requests(
     cached = client.get("/api/repos/o/r/issues", params={"label": "good-first-issue"})
     assert cached.status_code == 200
     assert [i["number"] for i in cached.json()["issues"]] == [1, 2]
+
+
+def test_org_detail_syncs_catalog_on_cold_start(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(gsoc_service, "sync_catalog", fake_sync)
+    response = client.get("/api/orgs/apertium")
+    assert response.status_code == 200
+    assert response.json()["slug"] == "apertium"
+

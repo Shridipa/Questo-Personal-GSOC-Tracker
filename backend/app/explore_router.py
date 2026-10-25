@@ -135,6 +135,7 @@ def get_org_detail(
     slug: str,
     current_user: AuthUser | None = Depends(get_optional_user),
 ) -> OrgDetail:
+    _ensure_catalog()
     if not _SLUG_RE.match(slug):
         raise HTTPException(status_code=404, detail="Organization not found.")
     user_id = current_user.id if current_user else None
@@ -151,6 +152,7 @@ def follow_org_endpoint(
     payload: FollowPayload = FollowPayload(),
     current_user: AuthUser | None = Depends(get_optional_user),
 ) -> FollowState:
+    _ensure_catalog()
     if not _SLUG_RE.match(slug):
         raise HTTPException(status_code=404, detail="Organization not found.")
     user_id = current_user.id if current_user else None
@@ -172,6 +174,7 @@ def unfollow_org_endpoint(
     slug: str,
     current_user: AuthUser | None = Depends(get_optional_user),
 ) -> FollowState:
+    _ensure_catalog()
     if not _SLUG_RE.match(slug):
         raise HTTPException(status_code=404, detail="Organization not found.")
     user_id = current_user.id if current_user else None
@@ -185,6 +188,7 @@ def unfollow_org_endpoint(
 def get_follows(
     current_user: AuthUser | None = Depends(get_optional_user),
 ) -> FollowListResponse:
+    _ensure_catalog()
     user_id = current_user.id if current_user else None
     return FollowListResponse(
         follows=[FollowedOrg.model_validate(f) for f in orgs_data.list_follows(user_id)]
